@@ -11,7 +11,7 @@ import { Announcement } from '@/features/student/types';
 import { cn } from '@/features/student/lib/utils';
 
 export default function AnnouncementDetails() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);

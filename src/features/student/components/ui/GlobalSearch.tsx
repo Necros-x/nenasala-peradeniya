@@ -114,7 +114,7 @@ export function GlobalSearch() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{course.title}</p>
-                          <p className="text-xs text-[var(--color-text-secondary)] truncate">{course.instructor}</p>
+                          <p className="text-xs text-[var(--color-text-secondary)] truncate">{course.instructor.name}</p>
                         </div>
                       </button>
                     ))}

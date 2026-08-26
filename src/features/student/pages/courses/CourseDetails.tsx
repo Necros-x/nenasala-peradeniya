@@ -11,7 +11,7 @@ import { getCourseById } from '@/features/student/lib/services';
 import { Course, Lesson } from '@/features/student/types';
 
 export default function CourseDetails() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
 
