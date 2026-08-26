@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../../components/ui/dropdown-menu";
 
 const MOCK_STUDENTS = [
-  { id: "NPU-STU-202600041", name: "Ramika Perera", course: "Web Development", intake: "WD-26.2", date: "24 Aug 2026", status: "Active" },
+  { id: "NPU-STU-202600041", name: "akon Perera", course: "Web Development", intake: "WD-26.2", date: "24 Aug 2026", status: "Active" },
   { id: "NPU-STU-202600042", name: "Sarah Silva", course: "Graphic Design", intake: "GD-26.1", date: "25 Aug 2026", status: "Pending Verification" },
   { id: "NPU-STU-202600043", name: "Kasun Bandara", course: "Data Science", intake: "DS-26.2", date: "25 Aug 2026", status: "Active" },
   { id: "NPU-STU-202600044", name: "Amila Fernando", course: "Web Development", intake: "WD-26.2", date: "26 Aug 2026", status: "Inactive" },
