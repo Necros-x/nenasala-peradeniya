@@ -1,0 +1,217 @@
+@import "tailwindcss";
+
+/*
+ * Nenasala master design system.
+ * Raw brand values live under --brand-* / --neutral-* and are mapped into
+ * semantic --color-* tokens so Website + Student + Admin share one palette.
+ */
+@theme inline {
+  --font-sans: var(--font-ui);
+
+  --color-primary: var(--brand-orange);
+  --color-primary-hover: var(--brand-orange-hover);
+  --color-secondary: var(--brand-orange-soft-strong);
+  --color-accent: var(--brand-orange-bright);
+
+  --color-brand-primary: var(--brand-orange);
+  --color-brand-primary-hover: var(--brand-orange-hover);
+  --color-brand-secondary: var(--brand-orange-soft-strong);
+  --color-brand-accent: var(--brand-orange-bright);
+
+  --color-background: var(--surface-page);
+  --color-foreground: var(--text-primary);
+  --color-surface: var(--surface-base);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-muted: var(--surface-muted);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-strong: var(--text-strong);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
+
+  --color-border: var(--border-base);
+  --color-input: var(--surface-base);
+
+  --color-success: var(--status-success);
+  --color-warning: var(--status-warning);
+  --color-error: var(--status-error);
+  --color-danger: var(--status-error);
+  --color-info: var(--status-info);
+
+  --radius-xs: var(--radius-xs-token);
+  --radius-sm: var(--radius-sm-token);
+  --radius-md: var(--radius-md-token);
+  --radius-lg: var(--radius-lg-token);
+  --radius-xl: var(--radius-xl-token);
+}
+
+@layer base {
+  :root {
+    /* Brand reference extraction */
+    --brand-orange: #ff6405;
+    --brand-orange-hover: #e85a00;
+    --brand-orange-active: #cc4e00;
+    --brand-orange-bright: #ff570c;
+    --brand-orange-soft-strong: #fe7642;
+    --brand-orange-soft: #fff0e8;
+    --brand-orange-muted: #ffd9c5;
+
+    /* Brand-compatible neutrals */
+    --surface-page: #f7f7f7;
+    --surface-base: #ffffff;
+    --surface-elevated: #ffffff;
+    --surface-muted: #efeeea;
+    --text-primary: #283f4f;
+    --text-strong: #323642;
+    --text-secondary: #606470;
+    --text-muted: #8d9098;
+    --text-inverse: #ffffff;
+    --border-base: #e4e3df;
+    --border-strong: #d3d2ce;
+
+    /* Semantic status colours: deliberately separate from brand orange */
+    --status-success: #27855f;
+    --status-success-soft: #e8f5ef;
+    --status-warning: #b86d00;
+    --status-warning-soft: #fff5dd;
+    --status-error: #c94646;
+    --status-error-soft: #fcecec;
+    --status-info: #3478a4;
+    --status-info-soft: #eaf4fa;
+
+    /* Public aliases consumed by the migrated UIs */
+    --color-primary: var(--brand-orange);
+    --color-primary-hover: var(--brand-orange-hover);
+    --color-primary-active: var(--brand-orange-active);
+    --color-secondary: var(--brand-orange-soft-strong);
+    --color-accent: var(--brand-orange-bright);
+    --color-primary-soft: var(--brand-orange-soft);
+    --color-primary-muted: var(--brand-orange-muted);
+    --color-brand-dark: var(--text-primary);
+    --color-on-brand: #ffffff;
+    --color-static-white: #ffffff;
+    --color-static-black: #000000;
+
+    --color-background: var(--surface-page);
+    --color-surface: var(--surface-base);
+    --color-surface-elevated: var(--surface-elevated);
+    --color-surface-muted: var(--surface-muted);
+
+    --color-text-primary: var(--text-primary);
+    --color-text-strong: var(--text-strong);
+    --color-text-secondary: var(--text-secondary);
+    --color-text-muted: var(--text-muted);
+    --color-text-inverse: var(--text-inverse);
+
+    --color-border: var(--border-base);
+    --color-border-strong: var(--border-strong);
+
+    --color-success: var(--status-success);
+    --color-warning: var(--status-warning);
+    --color-error: var(--status-error);
+    --color-info: var(--status-info);
+    --color-success-soft: var(--status-success-soft);
+    --color-warning-soft: var(--status-warning-soft);
+    --color-error-soft: var(--status-error-soft);
+    --color-info-soft: var(--status-info-soft);
+
+    /* Legacy admin aliases during migration */
+    --brand-primary: var(--brand-orange);
+    --brand-primary-hover: var(--brand-orange-hover);
+    --brand-secondary: var(--brand-orange-soft-strong);
+    --brand-accent: var(--brand-orange-bright);
+    --background: var(--surface-page);
+    --foreground: var(--text-primary);
+    --surface: var(--surface-base);
+    --surface-elevated: var(--surface-elevated);
+    --surface-muted: var(--surface-muted);
+    --border: var(--border-base);
+    --input: var(--surface-base);
+    --success: var(--status-success);
+    --warning: var(--status-warning);
+    --danger: var(--status-error);
+    --info: var(--status-info);
+
+    /* Smooth corner system. Nested geometry should follow outer = inner + padding. */
+    --radius-xs-token: 8px;
+    --radius-sm-token: 12px;
+    --radius-md-token: 16px;
+    --radius-lg-token: 24px;
+    --radius-xl-token: 32px;
+    --radius-2xl: 40px;
+
+    --radius-xs: var(--radius-xs-token);
+    --radius-sm: var(--radius-sm-token);
+    --radius-md: var(--radius-md-token);
+    --radius-lg: var(--radius-lg-token);
+    --radius-xl: var(--radius-xl-token);
+
+    --shadow-card: 0 16px 45px rgb(40 63 79 / 0.08);
+    --shadow-floating: 0 20px 60px rgb(40 63 79 / 0.12);
+    --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  .dark {
+    --surface-page: #11161a;
+    --surface-base: #171d21;
+    --surface-elevated: #1e252a;
+    --surface-muted: #252c31;
+    --text-primary: #f6f4f1;
+    --text-strong: #ffffff;
+    --text-secondary: #c6c4bf;
+    --text-muted: #8f9498;
+    --text-inverse: #172027;
+    --border-base: #30383d;
+    --border-strong: #434c51;
+  }
+
+  * {
+    box-sizing: border-box;
+    border-color: var(--color-border);
+  }
+
+  html {
+    background: var(--color-background);
+    color: var(--color-text-primary);
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--color-background);
+    color: var(--color-text-primary);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: var(--color-primary-muted);
+    color: var(--color-text-primary);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
