@@ -1,0 +1,173 @@
+diff --git a/src/features/student/components/ui/GlobalSearch.tsx b/src/features/student/components/ui/GlobalSearch.tsx
+index 0e3dbd4..22853e1 100644
+--- a/src/features/student/components/ui/GlobalSearch.tsx
++++ b/src/features/student/components/ui/GlobalSearch.tsx
+@@ -114,7 +114,7 @@ export function GlobalSearch() {
+                         </div>
+                         <div className="flex-1 min-w-0">
+                           <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{course.title}</p>
+-                          <p className="text-xs text-[var(--color-text-secondary)] truncate">{course.instructor}</p>
++                          <p className="text-xs text-[var(--color-text-secondary)] truncate">{course.instructor.name}</p>
+                         </div>
+                       </button>
+                     ))}
+diff --git a/src/features/student/pages/Schedule.tsx b/src/features/student/pages/Schedule.tsx
+index 078e394..ad448e0 100644
+--- a/src/features/student/pages/Schedule.tsx
++++ b/src/features/student/pages/Schedule.tsx
+@@ -80,63 +80,66 @@ export default function Schedule() {
+         ) : (
+           events.map((event) => {
+             const dateParts = formatEventDate(event.date);
+-            const CardWrapper = event.link ? Link : 'div';
+-            
+-            return (
+-              <CardWrapper 
+-                key={event.id} 
+-                to={event.link || ''}
+-                className={cn("block group", !event.link && "cursor-default")}
+-              >
+-                <Card className={cn("transition-shadow", event.link && "group-hover:shadow-md")}>
+-                  <div className="flex flex-col sm:flex-row">
+-                    {/* Date Block */}
+-                    <div className="sm:w-32 bg-[var(--color-surface-elevated)] p-4 sm:p-6 flex flex-row sm:flex-col items-center justify-center border-b sm:border-b-0 sm:border-r border-[var(--color-border)] gap-2 sm:gap-0 shrink-0">
+-                      <span className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{dateParts.month}</span>
+-                      <span className="text-3xl font-black text-[var(--color-text-primary)]">{dateParts.day}</span>
+-                      <span className="text-xs font-medium text-[var(--color-text-secondary)] sm:mt-1">{dateParts.weekday}</span>
++
++            const eventCard = (
++              <Card className={cn("transition-shadow", event.link && "group-hover:shadow-md")}>
++                <div className="flex flex-col sm:flex-row">
++                  {/* Date Block */}
++                  <div className="sm:w-32 bg-[var(--color-surface-elevated)] p-4 sm:p-6 flex flex-row sm:flex-col items-center justify-center border-b sm:border-b-0 sm:border-r border-[var(--color-border)] gap-2 sm:gap-0 shrink-0">
++                    <span className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{dateParts.month}</span>
++                    <span className="text-3xl font-black text-[var(--color-text-primary)]">{dateParts.day}</span>
++                    <span className="text-xs font-medium text-[var(--color-text-secondary)] sm:mt-1">{dateParts.weekday}</span>
++                  </div>
++
++                  {/* Content Block */}
++                  <div className="p-4 sm:p-6 flex-1 flex flex-col sm:flex-row sm:items-center gap-4">
++                    <div className={cn(
++                      "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border",
++                      event.type === 'live_session' ? "bg-[var(--color-primary-soft)] border-[var(--color-primary-muted)]" :
++                      event.type === 'deadline' ? "bg-[var(--color-warning-soft)] border-[var(--color-warning)]/20" :
++                      "bg-[var(--color-success-soft)] border-[var(--color-success)]/20"
++                    )}>
++                      {getEventIcon(event.type)}
+                     </div>
+ 
+-                    {/* Content Block */}
+-                    <div className="p-4 sm:p-6 flex-1 flex flex-col sm:flex-row sm:items-center gap-4">
+-                      <div className={cn(
+-                        "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border",
+-                        event.type === 'live_session' ? "bg-[var(--color-primary-soft)] border-[var(--color-primary-muted)]" :
+-                        event.type === 'deadline' ? "bg-[var(--color-warning-soft)] border-[var(--color-warning)]/20" :
+-                        "bg-[var(--color-success-soft)] border-[var(--color-success)]/20"
+-                      )}>
+-                        {getEventIcon(event.type)}
++                    <div className="flex-1 min-w-0">
++                      <div className="flex items-center gap-2 mb-1">
++                        {getEventBadge(event.type)}
++                        <span className="text-xs font-semibold text-[var(--color-text-muted)]">
++                          {event.time}
++                        </span>
+                       </div>
+-                      
+-                      <div className="flex-1 min-w-0">
+-                        <div className="flex items-center gap-2 mb-1">
+-                          {getEventBadge(event.type)}
+-                          <span className="text-xs font-semibold text-[var(--color-text-muted)]">
+-                            {event.time}
+-                          </span>
+-                        </div>
+-                        <h3 className="font-bold text-lg text-[var(--color-text-primary)] group-hover:text-[var(--color-primary)] transition-colors line-clamp-1">
+-                          {event.title}
+-                        </h3>
+-                        <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+-                          {event.courseTitle}
++                      <h3 className="font-bold text-lg text-[var(--color-text-primary)] group-hover:text-[var(--color-primary)] transition-colors line-clamp-1">
++                        {event.title}
++                      </h3>
++                      <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-1">
++                        {event.courseTitle}
++                      </p>
++                      {event.description && (
++                        <p className="text-sm text-[var(--color-text-muted)] line-clamp-2">
++                          {event.description}
+                         </p>
+-                        {event.description && (
+-                          <p className="text-sm text-[var(--color-text-muted)] line-clamp-2">
+-                            {event.description}
+-                          </p>
+-                        )}
+-                      </div>
+-
+-                      {event.link && (
+-                        <div className="hidden sm:flex shrink-0 w-8 items-center justify-end text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors">
+-                          <ChevronRight className="w-5 h-5" />
+-                        </div>
+                       )}
+                     </div>
++
++                    {event.link && (
++                      <div className="hidden sm:flex shrink-0 w-8 items-center justify-end text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors">
++                        <ChevronRight className="w-5 h-5" />
++                      </div>
++                    )}
+                   </div>
+-                </Card>
+-              </CardWrapper>
++                </div>
++              </Card>
++            );
++
++            return event.link ? (
++              <Link key={event.id} to={event.link} className="block group">
++                {eventCard}
++              </Link>
++            ) : (
++              <div key={event.id} className="block group cursor-default">
++                {eventCard}
++              </div>
+             );
+           })
+         )}
+diff --git a/src/features/student/pages/announcements/AnnouncementDetails.tsx b/src/features/student/pages/announcements/AnnouncementDetails.tsx
+index 28168a8..62edc83 100644
+--- a/src/features/student/pages/announcements/AnnouncementDetails.tsx
++++ b/src/features/student/pages/announcements/AnnouncementDetails.tsx
+@@ -11,7 +11,7 @@ import { Announcement } from '@/features/student/types';
+ import { cn } from '@/features/student/lib/utils';
+ 
+ export default function AnnouncementDetails() {
+-  const { id } = useParams();
++  const { id } = useParams<{ id: string }>();
+   const navigate = useNavigate();
+   
+   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
+diff --git a/src/features/student/pages/courses/CourseDetails.tsx b/src/features/student/pages/courses/CourseDetails.tsx
+index 000b677..10959f7 100644
+--- a/src/features/student/pages/courses/CourseDetails.tsx
++++ b/src/features/student/pages/courses/CourseDetails.tsx
+@@ -11,7 +11,7 @@ import { getCourseById } from '@/features/student/lib/services';
+ import { Course, Lesson } from '@/features/student/types';
+ 
+ export default function CourseDetails() {
+-  const { id } = useParams();
++  const { id } = useParams<{ id: string }>();
+   const [course, setCourse] = useState<Course | null>(null);
+   const [loading, setLoading] = useState(true);
+ 
+diff --git a/src/features/student/pages/quizzes/QuizSession.tsx b/src/features/student/pages/quizzes/QuizSession.tsx
+index feed224..1f8a863 100644
+--- a/src/features/student/pages/quizzes/QuizSession.tsx
++++ b/src/features/student/pages/quizzes/QuizSession.tsx
+@@ -10,7 +10,7 @@ import { Quiz, Question } from '@/features/student/types';
+ import { cn } from '@/features/student/lib/utils';
+ 
+ export default function QuizSession() {
+-  const { quizId } = useParams();
++  const { quizId } = useParams<{ quizId: string }>();
+   const navigate = useNavigate();
+   
+   const [quiz, setQuiz] = useState<Quiz | null>(null);

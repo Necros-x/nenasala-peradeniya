@@ -80,63 +80,66 @@ export default function Schedule() {
         ) : (
           events.map((event) => {
             const dateParts = formatEventDate(event.date);
-            const CardWrapper = event.link ? Link : 'div';
-            
-            return (
-              <CardWrapper 
-                key={event.id} 
-                to={event.link || ''}
-                className={cn("block group", !event.link && "cursor-default")}
-              >
-                <Card className={cn("transition-shadow", event.link && "group-hover:shadow-md")}>
-                  <div className="flex flex-col sm:flex-row">
-                    {/* Date Block */}
-                    <div className="sm:w-32 bg-[var(--color-surface-elevated)] p-4 sm:p-6 flex flex-row sm:flex-col items-center justify-center border-b sm:border-b-0 sm:border-r border-[var(--color-border)] gap-2 sm:gap-0 shrink-0">
-                      <span className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{dateParts.month}</span>
-                      <span className="text-3xl font-black text-[var(--color-text-primary)]">{dateParts.day}</span>
-                      <span className="text-xs font-medium text-[var(--color-text-secondary)] sm:mt-1">{dateParts.weekday}</span>
+
+            const eventCard = (
+              <Card className={cn("transition-shadow", event.link && "group-hover:shadow-md")}>
+                <div className="flex flex-col sm:flex-row">
+                  {/* Date Block */}
+                  <div className="sm:w-32 bg-[var(--color-surface-elevated)] p-4 sm:p-6 flex flex-row sm:flex-col items-center justify-center border-b sm:border-b-0 sm:border-r border-[var(--color-border)] gap-2 sm:gap-0 shrink-0">
+                    <span className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{dateParts.month}</span>
+                    <span className="text-3xl font-black text-[var(--color-text-primary)]">{dateParts.day}</span>
+                    <span className="text-xs font-medium text-[var(--color-text-secondary)] sm:mt-1">{dateParts.weekday}</span>
+                  </div>
+
+                  {/* Content Block */}
+                  <div className="p-4 sm:p-6 flex-1 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border",
+                      event.type === 'live_session' ? "bg-[var(--color-primary-soft)] border-[var(--color-primary-muted)]" :
+                      event.type === 'deadline' ? "bg-[var(--color-warning-soft)] border-[var(--color-warning)]/20" :
+                      "bg-[var(--color-success-soft)] border-[var(--color-success)]/20"
+                    )}>
+                      {getEventIcon(event.type)}
                     </div>
 
-                    {/* Content Block */}
-                    <div className="p-4 sm:p-6 flex-1 flex flex-col sm:flex-row sm:items-center gap-4">
-                      <div className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border",
-                        event.type === 'live_session' ? "bg-[var(--color-primary-soft)] border-[var(--color-primary-muted)]" :
-                        event.type === 'deadline' ? "bg-[var(--color-warning-soft)] border-[var(--color-warning)]/20" :
-                        "bg-[var(--color-success-soft)] border-[var(--color-success)]/20"
-                      )}>
-                        {getEventIcon(event.type)}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        {getEventBadge(event.type)}
+                        <span className="text-xs font-semibold text-[var(--color-text-muted)]">
+                          {event.time}
+                        </span>
                       </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          {getEventBadge(event.type)}
-                          <span className="text-xs font-semibold text-[var(--color-text-muted)]">
-                            {event.time}
-                          </span>
-                        </div>
-                        <h3 className="font-bold text-lg text-[var(--color-text-primary)] group-hover:text-[var(--color-primary)] transition-colors line-clamp-1">
-                          {event.title}
-                        </h3>
-                        <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                          {event.courseTitle}
+                      <h3 className="font-bold text-lg text-[var(--color-text-primary)] group-hover:text-[var(--color-primary)] transition-colors line-clamp-1">
+                        {event.title}
+                      </h3>
+                      <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                        {event.courseTitle}
+                      </p>
+                      {event.description && (
+                        <p className="text-sm text-[var(--color-text-muted)] line-clamp-2">
+                          {event.description}
                         </p>
-                        {event.description && (
-                          <p className="text-sm text-[var(--color-text-muted)] line-clamp-2">
-                            {event.description}
-                          </p>
-                        )}
-                      </div>
-
-                      {event.link && (
-                        <div className="hidden sm:flex shrink-0 w-8 items-center justify-end text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors">
-                          <ChevronRight className="w-5 h-5" />
-                        </div>
                       )}
                     </div>
+
+                    {event.link && (
+                      <div className="hidden sm:flex shrink-0 w-8 items-center justify-end text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors">
+                        <ChevronRight className="w-5 h-5" />
+                      </div>
+                    )}
                   </div>
-                </Card>
-              </CardWrapper>
+                </div>
+              </Card>
+            );
+
+            return event.link ? (
+              <Link key={event.id} to={event.link} className="block group">
+                {eventCard}
+              </Link>
+            ) : (
+              <div key={event.id} className="block group cursor-default">
+                {eventCard}
+              </div>
             );
           })
         )}

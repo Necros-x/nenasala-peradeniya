@@ -10,7 +10,7 @@ import { Quiz, Question } from '@/features/student/types';
 import { cn } from '@/features/student/lib/utils';
 
 export default function QuizSession() {
-  const { quizId } = useParams();
+  const { quizId } = useParams<{ quizId: string }>();
   const navigate = useNavigate();
   
   const [quiz, setQuiz] = useState<Quiz | null>(null);
