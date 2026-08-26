@@ -10,7 +10,7 @@ export const StudentService = {
     // return data;
     
     return [
-      { id: "1", registration_id: "NPU-STU-202600041", first_name: "Ramika", last_name: "Perera", email: "ramika@example.com", phone: "+94770000000", status: "Active", created_at: "2026-08-24" },
+      { id: "1", registration_id: "NPU-STU-202600041", first_name: "Akon", last_name: "Perera", email: "akon@example.com", phone: "+94770000000", status: "Active", created_at: "2026-08-24" },
     ];
   },
 
