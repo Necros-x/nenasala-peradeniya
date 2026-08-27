@@ -1,6 +1,7 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { hasValidDemoSession, isAdminDemoEnabled } from "@/lib/demo/session";
 
 export type PlatformRole = "student" | "instructor" | "admin" | "super_admin";
 
@@ -24,6 +25,8 @@ async function getVerifiedIdentity() {
 
 export async function requireStudent() {
   if (isLocalUiBypass()) return { id: "local-ui-preview", role: "student" as const };
+  if (await hasValidDemoSession()) return { id: "demo-preview", role: "student" as const };
+
   const identity = await getVerifiedIdentity();
   if (!identity) redirect("/login");
   if (identity.role !== "student") redirect("/");
@@ -32,6 +35,10 @@ export async function requireStudent() {
 
 export async function requireAdmin(loginPath: string) {
   if (isLocalUiBypass()) return { id: "local-ui-preview", role: "super_admin" as const };
+  if (isAdminDemoEnabled() && (await hasValidDemoSession())) {
+    return { id: "demo-preview", role: "super_admin" as const };
+  }
+
   const identity = await getVerifiedIdentity();
   if (!identity) redirect(loginPath);
   if (identity.role !== "admin" && identity.role !== "super_admin") redirect("/");
