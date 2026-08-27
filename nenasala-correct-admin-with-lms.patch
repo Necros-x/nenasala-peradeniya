@@ -1,0 +1,892 @@
+diff --git a/src/app/internal/[accessKey]/(portal)/staff/page.tsx b/src/app/internal/[accessKey]/(portal)/staff/page.tsx
+new file mode 100644
+index 0000000..404ac8e
+--- /dev/null
++++ b/src/app/internal/[accessKey]/(portal)/staff/page.tsx
+@@ -0,0 +1,10 @@
++import { AdminPlaceholder } from "@/components/admin/AdminPlaceholder";
++
++export default function Page() {
++  return (
++    <AdminPlaceholder
++      title="Staff & Admin"
++      description="Manage administrative staff accounts, roles and access permissions."
++    />
++  );
++}
+diff --git a/src/app/internal/[accessKey]/lms/announcements/page.tsx b/src/app/internal/[accessKey]/lms/announcements/page.tsx
+new file mode 100644
+index 0000000..0b9d619
+--- /dev/null
++++ b/src/app/internal/[accessKey]/lms/announcements/page.tsx
+@@ -0,0 +1,10 @@
++import { AdminPlaceholder } from "@/components/admin/AdminPlaceholder";
++
++export default function Page() {
++  return (
++    <AdminPlaceholder
++      title="LMS Announcements"
++      description="Publish learning announcements to courses, intakes or selected students."
++    />
++  );
++}
+diff --git a/src/app/internal/[accessKey]/lms/assignments/page.tsx b/src/app/internal/[accessKey]/lms/assignments/page.tsx
+new file mode 100644
+index 0000000..9dd9721
+--- /dev/null
++++ b/src/app/internal/[accessKey]/lms/assignments/page.tsx
+@@ -0,0 +1,10 @@
++import { AdminPlaceholder } from "@/components/admin/AdminPlaceholder";
++
++export default function Page() {
++  return (
++    <AdminPlaceholder
++      title="Assignments"
++      description="Create assignments, review submissions and manage grading workflows."
++    />
++  );
++}
+diff --git a/src/app/internal/[accessKey]/lms/classes/page.tsx b/src/app/internal/[accessKey]/lms/classes/page.tsx
+new file mode 100644
+index 0000000..815978e
+--- /dev/null
++++ b/src/app/internal/[accessKey]/lms/classes/page.tsx
+@@ -0,0 +1,10 @@
++import { AdminPlaceholder } from "@/components/admin/AdminPlaceholder";
++
++export default function Page() {
++  return (
++    <AdminPlaceholder
++      title="Classes"
++      description="Schedule, manage and review live or in-person learning sessions."
++    />
++  );
++}
+diff --git a/src/app/internal/[accessKey]/lms/content/page.tsx b/src/app/internal/[accessKey]/lms/content/page.tsx
+new file mode 100644
+index 0000000..7147fca
+--- /dev/null
++++ b/src/app/internal/[accessKey]/lms/content/page.tsx
+@@ -0,0 +1,10 @@
++import { AdminPlaceholder } from "@/components/admin/AdminPlaceholder";
++
++export default function Page() {
++  return (
++    <AdminPlaceholder
++      title="Course Content"
++      description="Build modules, lessons, learning resources and protected course content."
++    />
++  );
++}
+diff --git a/src/app/internal/[accessKey]/lms/layout.tsx b/src/app/internal/[accessKey]/lms/layout.tsx
+new file mode 100644
+index 0000000..de70b69
+--- /dev/null
++++ b/src/app/internal/[accessKey]/lms/layout.tsx
+@@ -0,0 +1,14 @@
++import { LMSManagementShell } from "@/components/admin/LMSManagementShell";
++import { requireAdmin } from "@/lib/auth/guards";
++
++export default async function Layout({
++  children,
++  params,
++}: {
++  children: React.ReactNode;
++  params: Promise<{ accessKey: string }>;
++}) {
++  const { accessKey } = await params;
++  await requireAdmin(`/internal/${accessKey}/login`);
++  return <LMSManagementShell>{children}</LMSManagementShell>;
++}
+diff --git a/src/app/internal/[accessKey]/lms/page.tsx b/src/app/internal/[accessKey]/lms/page.tsx
+new file mode 100644
+index 0000000..28ef8f0
+--- /dev/null
++++ b/src/app/internal/[accessKey]/lms/page.tsx
+@@ -0,0 +1,5 @@
++import LMSDashboard from "@/features/admin/pages/lms/LMSDashboard";
++
++export default function Page() {
++  return <LMSDashboard />;
++}
+diff --git a/src/app/internal/[accessKey]/lms/progress/page.tsx b/src/app/internal/[accessKey]/lms/progress/page.tsx
+new file mode 100644
+index 0000000..25a050d
+--- /dev/null
++++ b/src/app/internal/[accessKey]/lms/progress/page.tsx
+@@ -0,0 +1,10 @@
++import { AdminPlaceholder } from "@/components/admin/AdminPlaceholder";
++
++export default function Page() {
++  return (
++    <AdminPlaceholder
++      title="Progress & Grades"
++      description="Review lesson progress, assignment grades, quiz scores and learner performance."
++    />
++  );
++}
+diff --git a/src/app/internal/[accessKey]/lms/quizzes/page.tsx b/src/app/internal/[accessKey]/lms/quizzes/page.tsx
+new file mode 100644
+index 0000000..9f689dc
+--- /dev/null
++++ b/src/app/internal/[accessKey]/lms/quizzes/page.tsx
+@@ -0,0 +1,10 @@
++import { AdminPlaceholder } from "@/components/admin/AdminPlaceholder";
++
++export default function Page() {
++  return (
++    <AdminPlaceholder
++      title="Quizzes"
++      description="Create quizzes, manage questions, attempts, pass marks and results."
++    />
++  );
++}
+diff --git a/src/app/internal/[accessKey]/lms/recordings/page.tsx b/src/app/internal/[accessKey]/lms/recordings/page.tsx
+new file mode 100644
+index 0000000..4b6c5b5
+--- /dev/null
++++ b/src/app/internal/[accessKey]/lms/recordings/page.tsx
+@@ -0,0 +1,10 @@
++import { AdminPlaceholder } from "@/components/admin/AdminPlaceholder";
++
++export default function Page() {
++  return (
++    <AdminPlaceholder
++      title="Recordings"
++      description="Manage recorded sessions and their publication state for enrolled students."
++    />
++  );
++}
+diff --git a/src/app/internal/[accessKey]/lms/students/page.tsx b/src/app/internal/[accessKey]/lms/students/page.tsx
+new file mode 100644
+index 0000000..f8abe36
+--- /dev/null
++++ b/src/app/internal/[accessKey]/lms/students/page.tsx
+@@ -0,0 +1,10 @@
++import { AdminPlaceholder } from "@/components/admin/AdminPlaceholder";
++
++export default function Page() {
++  return (
++    <AdminPlaceholder
++      title="LMS Students"
++      description="Review enrolled learners, course access and learning activity from the LMS workspace."
++    />
++  );
++}
+diff --git a/src/app/internal/[accessKey]/page.tsx b/src/app/internal/[accessKey]/page.tsx
+index 937840d..78c3a58 100644
+--- a/src/app/internal/[accessKey]/page.tsx
++++ b/src/app/internal/[accessKey]/page.tsx
+@@ -1,5 +1,8 @@
+-import { redirect } from "next/navigation";
++import ControlCenter from "@/features/admin/pages/ControlCenter";
++import { requireAdmin } from "@/lib/auth/guards";
++
+ export default async function Page({ params }: { params: Promise<{ accessKey: string }> }) {
+   const { accessKey } = await params;
+-  redirect(`/internal/${accessKey}/dashboard`);
++  await requireAdmin(`/internal/${accessKey}/login`);
++  return <ControlCenter />;
+ }
+diff --git a/src/components/admin/AdminShell.tsx b/src/components/admin/AdminShell.tsx
+index f9d4613..88557fb 100644
+--- a/src/components/admin/AdminShell.tsx
++++ b/src/components/admin/AdminShell.tsx
+@@ -21,6 +21,7 @@ import {
+   Megaphone,
+   Award,
+   MessagesSquare,
++  UserPlus,
+ } from "lucide-react";
+ import { Toaster, toast } from "sonner";
+ import { Button } from "@/features/admin/components/ui/button";
+@@ -38,37 +39,28 @@ import { createClient } from "@/lib/supabase/client";
+ import { useRouter } from "next/navigation";
+ 
+ const navGroups = [
+-  { title: "OVERVIEW", items: [{ label: "Dashboard", path: "/dashboard", icon: LayoutDashboard }] },
++  {
++    title: "OVERVIEW",
++    items: [{ label: "Dashboard", path: "/dashboard", icon: LayoutDashboard }],
++  },
+   {
+     title: "PEOPLE",
+     items: [
+       { label: "Students", path: "/students", icon: Users },
+       { label: "Instructors", path: "/instructors", icon: Briefcase },
++      { label: "Staff & Admin", path: "/staff", icon: UserPlus },
+     ],
+   },
+   {
+-    title: "LEARNING",
++    title: "ACADEMIC",
+     items: [
+-      { label: "Courses", path: "/courses", icon: BookOpen },
++      { label: "Programmes & Courses", path: "/courses", icon: BookOpen },
+       { label: "Intakes", path: "/intakes", icon: GraduationCap },
+-      { label: "Enrollments", path: "/enrollments", icon: ClipboardList },
+-      { label: "Assignments", path: "/assignments", icon: ClipboardList },
+-      { label: "Quizzes", path: "/quizzes", icon: FileQuestion },
+-    ],
+-  },
+-  {
+-    title: "COMMUNICATION",
+-    items: [
+-      { label: "Announcements", path: "/announcements", icon: Megaphone },
+-      { label: "Messages", path: "/messages", icon: MessagesSquare },
+     ],
+   },
+   {
+     title: "SYSTEM",
+-    items: [
+-      { label: "Certificates", path: "/certificates", icon: Award },
+-      { label: "Settings", path: "/settings", icon: Settings },
+-    ],
++    items: [{ label: "Settings", path: "/settings", icon: Settings }],
+   },
+ ];
+ 
+@@ -77,7 +69,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+   return (
+     <>
+       <div className="h-20 flex items-center px-5 border-b border-border">
+-        <Link to="/dashboard" onClick={onNavigate} className="flex items-center min-w-0">
++        <Link to="/" onClick={onNavigate} className="flex items-center min-w-0">
+           <img src="/brand/nenasala-logo.png" alt="Nenasala" className="h-10 w-auto max-w-[170px] object-contain" />
+           <span className="sr-only">Nenasala Admin Portal</span>
+         </Link>
+diff --git a/src/components/admin/LMSManagementShell.tsx b/src/components/admin/LMSManagementShell.tsx
+new file mode 100644
+index 0000000..1be124e
+--- /dev/null
++++ b/src/components/admin/LMSManagementShell.tsx
+@@ -0,0 +1,241 @@
++"use client";
++
++import React, { useEffect, useState } from "react";
++import { Link, useLocation, useParams } from "react-router-dom";
++import {
++  LayoutDashboard,
++  Users,
++  Video,
++  BookOpen,
++  PenTool,
++  CheckSquare,
++  PlayCircle,
++  MessageSquare,
++  ClipboardList,
++  Search,
++  Sun,
++  Moon,
++  LogOut,
++  Menu,
++  X,
++  ArrowLeft,
++} from "lucide-react";
++import { Toaster, toast } from "sonner";
++import { Button } from "@/features/admin/components/ui/button";
++import { Input } from "@/features/admin/components/ui/input";
++import {
++  DropdownMenu,
++  DropdownMenuContent,
++  DropdownMenuItem,
++  DropdownMenuLabel,
++  DropdownMenuSeparator,
++  DropdownMenuTrigger,
++} from "@/features/admin/components/ui/dropdown-menu";
++import { cn } from "@/features/admin/lib/utils";
++import { createClient } from "@/lib/supabase/client";
++import { useRouter } from "next/navigation";
++
++const navGroups = [
++  {
++    title: "OVERVIEW",
++    items: [
++      { label: "Dashboard", path: "/lms", icon: LayoutDashboard },
++      { label: "Students", path: "/lms/students", icon: Users },
++    ],
++  },
++  {
++    title: "LEARNING",
++    items: [
++      { label: "Classes", path: "/lms/classes", icon: Video },
++      { label: "Course Content", path: "/lms/content", icon: BookOpen },
++      { label: "Assignments", path: "/lms/assignments", icon: PenTool },
++      { label: "Quizzes", path: "/lms/quizzes", icon: CheckSquare },
++      { label: "Recordings", path: "/lms/recordings", icon: PlayCircle },
++    ],
++  },
++  {
++    title: "COMMUNICATION",
++    items: [{ label: "Announcements", path: "/lms/announcements", icon: MessageSquare }],
++  },
++  {
++    title: "PERFORMANCE",
++    items: [{ label: "Progress & Grades", path: "/lms/progress", icon: ClipboardList }],
++  },
++];
++
++function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
++  const location = useLocation();
++
++  return (
++    <>
++      <div className="flex h-20 items-center border-b border-border px-5">
++        <Link to="/" onClick={onNavigate} className="flex min-w-0 items-center">
++          <img
++            src="/brand/nenasala-logo.png"
++            alt="Nenasala"
++            className="h-10 w-auto max-w-[170px] object-contain"
++          />
++          <span className="sr-only">Nenasala LMS Management</span>
++        </Link>
++      </div>
++
++      <div className="border-b border-border px-3 py-3">
++        <Link
++          to="/"
++          onClick={onNavigate}
++          className="flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-xs font-semibold text-text-secondary transition-colors hover:bg-surface-muted hover:text-text-primary"
++        >
++          <ArrowLeft className="h-3.5 w-3.5" />
++          Control Center
++        </Link>
++      </div>
++
++      <div className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
++        {navGroups.map((group) => (
++          <div key={group.title} className="space-y-1">
++            <p className="mb-2 px-3 text-[11px] font-bold tracking-[0.16em] text-text-muted">
++              {group.title}
++            </p>
++            {group.items.map((item) => {
++              const active =
++                location.pathname === item.path ||
++                (item.path !== "/lms" && location.pathname.startsWith(item.path));
++
++              return (
++                <Link
++                  key={item.path}
++                  to={item.path}
++                  onClick={onNavigate}
++                  className={cn(
++                    "flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm font-medium transition-colors",
++                    active
++                      ? "bg-brand-primary text-[var(--color-static-white)] shadow-sm"
++                      : "text-text-secondary hover:bg-surface-muted hover:text-text-primary"
++                  )}
++                >
++                  <item.icon className="h-4 w-4 shrink-0" />
++                  {item.label}
++                </Link>
++              );
++            })}
++          </div>
++        ))}
++      </div>
++    </>
++  );
++}
++
++export function LMSManagementShell({ children }: { children: React.ReactNode }) {
++  const [isDark, setIsDark] = useState(false);
++  const [mobileOpen, setMobileOpen] = useState(false);
++  const params = useParams<{ accessKey: string }>();
++  const router = useRouter();
++
++  useEffect(() => {
++    document.documentElement.classList.toggle("dark", isDark);
++    return () => document.documentElement.classList.remove("dark");
++  }, [isDark]);
++
++  async function signOut() {
++    try {
++      const supabase = createClient();
++      await supabase.auth.signOut();
++      router.replace(`/internal/${params.accessKey}/login`);
++      router.refresh();
++    } catch {
++      toast.error("Unable to sign out. Supabase may not be configured yet.");
++    }
++  }
++
++  return (
++    <div className="flex min-h-screen bg-background text-foreground">
++      <Toaster position="top-right" richColors />
++
++      {mobileOpen && (
++        <button
++          aria-label="Close navigation"
++          className="fixed inset-0 z-40 bg-[var(--color-static-black)]/35 lg:hidden"
++          onClick={() => setMobileOpen(false)}
++        />
++      )}
++
++      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-surface lg:flex">
++        <SidebarContent />
++      </aside>
++
++      <aside
++        className={cn(
++          "fixed inset-y-0 left-0 z-50 flex w-72 max-w-[86vw] flex-col border-r border-border bg-surface shadow-2xl transition-transform lg:hidden",
++          mobileOpen ? "translate-x-0" : "-translate-x-full"
++        )}
++      >
++        <button
++          aria-label="Close menu"
++          className="absolute right-3 top-3 rounded-[var(--radius-sm)] p-2 text-text-secondary hover:bg-surface-muted"
++          onClick={() => setMobileOpen(false)}
++        >
++          <X className="h-5 w-5" />
++        </button>
++        <SidebarContent onNavigate={() => setMobileOpen(false)} />
++      </aside>
++
++      <div className="flex min-w-0 flex-1 flex-col">
++        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-surface/90 px-4 backdrop-blur-xl md:px-6">
++          <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(true)}>
++            <Menu className="h-5 w-5" />
++          </Button>
++
++          <div className="relative hidden w-full max-w-md md:block">
++            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
++            <Input
++              placeholder="Search courses, classes, assignments..."
++              className="rounded-[var(--radius-sm)] border-border bg-background pl-9"
++            />
++          </div>
++
++          <div className="ml-auto flex items-center gap-1.5">
++            <div className="mr-2 hidden text-right xl:block">
++              <p className="text-xs font-semibold text-text-primary">LMS Management</p>
++              <p className="text-[10px] text-text-muted">Learning operations workspace</p>
++            </div>
++
++            <Button
++              variant="ghost"
++              size="icon"
++              onClick={() => setIsDark((value) => !value)}
++              aria-label="Toggle theme"
++            >
++              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
++            </Button>
++
++            <DropdownMenu>
++              <DropdownMenuTrigger asChild>
++                <Button variant="ghost" className="h-9 gap-2 rounded-[var(--radius-sm)] px-2.5">
++                  <span className="grid h-7 w-7 place-items-center rounded-[10px] bg-[var(--color-primary-soft)] text-xs font-bold text-brand-primary">
++                    AP
++                  </span>
++                  <span className="hidden text-sm sm:inline">Admin</span>
++                </Button>
++              </DropdownMenuTrigger>
++              <DropdownMenuContent align="end">
++                <DropdownMenuLabel>LMS Management</DropdownMenuLabel>
++                <DropdownMenuSeparator />
++                <DropdownMenuItem asChild>
++                  <Link to="/">Control Center</Link>
++                </DropdownMenuItem>
++                <DropdownMenuSeparator />
++                <DropdownMenuItem onSelect={signOut} className="text-danger">
++                  <LogOut className="mr-2 h-4 w-4" /> Log out
++                </DropdownMenuItem>
++              </DropdownMenuContent>
++            </DropdownMenu>
++          </div>
++        </header>
++
++        <main className="flex-1 overflow-x-hidden p-4 md:p-6 lg:p-8">
++          <div className="mx-auto max-w-[1500px]">{children}</div>
++        </main>
++      </div>
++    </div>
++  );
++}
+diff --git a/src/features/admin/pages/ControlCenter.tsx b/src/features/admin/pages/ControlCenter.tsx
+new file mode 100644
+index 0000000..4899100
+--- /dev/null
++++ b/src/features/admin/pages/ControlCenter.tsx
+@@ -0,0 +1,193 @@
++"use client";
++
++import { Link } from "react-router-dom";
++import {
++  Settings,
++  BookOpen,
++  BarChart3,
++  Presentation,
++  ArrowRight,
++  Search,
++  Bell,
++} from "lucide-react";
++import { Card } from "@/features/admin/components/ui/card";
++
++const portals = [
++  {
++    title: "ADMINISTRATION",
++    description: "Users, programmes, payments, intakes and documents.",
++    icon: Settings,
++    path: "/dashboard",
++    active: true,
++  },
++  {
++    title: "LMS MANAGEMENT",
++    description: "Classes, learning content, assignments and quizzes.",
++    icon: BookOpen,
++    path: "/lms",
++    active: true,
++  },
++  {
++    title: "ANALYTICS",
++    description: "Reports, statistics and institutional insights.",
++    icon: BarChart3,
++    path: "/reports",
++    active: false,
++  },
++  {
++    title: "INSTRUCTOR PORTAL",
++    description: "Instructor tools, grading and class management.",
++    icon: Presentation,
++    path: "/instructors",
++    active: false,
++  },
++];
++
++export default function ControlCenter() {
++  return (
++    <div className="relative flex min-h-screen flex-col overflow-hidden bg-background text-foreground">
++      <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-[var(--color-primary-soft)] blur-3xl opacity-70" />
++      <div className="pointer-events-none absolute -bottom-28 -left-24 h-96 w-96 rounded-full bg-[var(--color-primary-muted)] blur-3xl opacity-40" />
++
++      <header className="absolute left-0 top-0 z-10 flex h-16 w-full items-center justify-between border-b border-border bg-background/70 px-4 backdrop-blur-xl md:px-8">
++        <div className="flex min-w-0 items-center gap-3">
++          <img
++            src="/brand/nenasala-logo.png"
++            alt="Nenasala"
++            className="h-10 w-auto max-w-[165px] object-contain"
++          />
++          <div className="hidden border-l border-border pl-3 sm:block">
++            <p className="text-[10px] uppercase tracking-[0.18em] text-text-muted">Admin Operating System</p>
++          </div>
++        </div>
++
++        <div className="mx-8 hidden max-w-md flex-1 md:block">
++          <div className="group relative">
++            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
++            <input
++              type="search"
++              placeholder="Search records (Cmd + K)"
++              className="w-full rounded-[var(--radius-sm)] border border-border bg-surface py-2 pl-10 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-text-muted focus:border-brand-primary/50"
++            />
++          </div>
++        </div>
++
++        <div className="flex items-center gap-3">
++          <button
++            type="button"
++            aria-label="Notifications"
++            className="relative hidden rounded-[var(--radius-sm)] p-2 text-text-muted transition-colors hover:bg-surface-muted hover:text-foreground md:block"
++          >
++            <Bell className="h-5 w-5" />
++            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border-2 border-background bg-brand-primary" />
++          </button>
++          <div className="hidden h-6 w-px bg-border md:block" />
++          <div className="flex items-center gap-3">
++            <div className="hidden text-right md:block">
++              <p className="text-xs font-medium text-foreground">Administrator</p>
++              <p className="text-[10px] text-brand-primary">Super Admin</p>
++            </div>
++            <div className="grid h-9 w-9 place-items-center rounded-[10px] border border-border bg-[var(--color-primary-soft)] text-xs font-bold text-brand-primary">
++              AD
++            </div>
++          </div>
++        </div>
++      </header>
++
++      <main className="z-10 mx-auto mt-16 flex w-full max-w-6xl flex-1 flex-col px-5 py-10 md:px-6 md:py-16">
++        <header className="mb-10 md:mb-12">
++          <h1 className="text-3xl font-light text-text-secondary md:text-4xl">Control Center</h1>
++          <p className="mt-2 text-sm text-text-muted md:text-base">
++            Welcome back. Choose a workspace or review priority items.
++          </p>
++        </header>
++
++        <section className="mb-10 md:mb-12">
++          <div className="mb-4 flex items-center justify-between gap-4">
++            <h2 className="text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">Attention Center</h2>
++            <span className="rounded-full bg-[var(--color-primary-soft)] px-2.5 py-1 text-[10px] font-bold text-brand-primary">
++              9+ Critical Items
++            </span>
++          </div>
++          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5 md:gap-4">
++            {[
++              { label: "Enrollments", sub: "Awaiting verification", count: "12", alert: true },
++              { label: "Doc Reviews", sub: "Identity verification", count: "03" },
++              { label: "Cancellations", sub: "Instructor requests", count: "02" },
++              { label: "Assignments", sub: "New submissions", count: "06", neutralAlert: true },
++              { label: "Intake Alerts", sub: "Closing within 48h", count: "01" },
++            ].map((item) => (
++              <Link to="/dashboard" key={item.label} className="block h-full">
++                <Card
++                  className={`flex h-full flex-col gap-1 rounded-[var(--radius-lg)] border border-border bg-surface p-4 transition-colors hover:border-brand-primary/50 ${
++                    item.alert ? "border-l-4 border-l-brand-primary" : ""
++                  } ${item.neutralAlert ? "border-l-4 border-l-border-strong" : ""}`}
++                >
++                  <span className={`text-2xl font-bold ${item.alert ? "text-brand-primary" : "text-foreground"}`}>{item.count}</span>
++                  <span className="text-xs font-medium text-text-secondary">{item.label}</span>
++                  <span className="text-[9px] text-text-muted">{item.sub}</span>
++                </Card>
++              </Link>
++            ))}
++          </div>
++        </section>
++
++        <section className="flex flex-1 flex-col">
++          <div className="grid flex-1 grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4 md:gap-6">
++            {portals.map((portal) => (
++              <Link
++                to={portal.active ? portal.path : "#"}
++                key={portal.title}
++                aria-disabled={!portal.active}
++                onClick={(event: React.MouseEvent<HTMLAnchorElement>) => {
++                  if (!portal.active) event.preventDefault();
++                }}
++                className={`block ${!portal.active ? "cursor-not-allowed opacity-65" : ""}`}
++              >
++                <div
++                  className={`group relative flex h-full min-h-[240px] flex-col justify-between overflow-hidden rounded-[var(--radius-xl)] border p-6 transition-all ${
++                    portal.active
++                      ? "border-border bg-surface hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
++                      : "border-dashed border-border bg-surface/70"
++                  }`}
++                >
++                  <portal.icon className="absolute -right-8 -top-8 h-48 w-48 rotate-12 text-foreground opacity-[0.025] transition-transform group-hover:scale-110 group-hover:rotate-6" />
++                  <div>
++                    <div
++                      className={`mb-4 flex h-12 w-12 items-center justify-center rounded-[var(--radius-md)] border border-border bg-surface-elevated ${
++                        portal.active ? "text-brand-primary" : "text-text-muted"
++                      }`}
++                    >
++                      <portal.icon className="h-6 w-6" />
++                    </div>
++                    <h3 className={`mb-2 text-xl font-semibold ${portal.active ? "text-foreground" : "text-text-secondary"}`}>
++                      {portal.title}
++                    </h3>
++                    <p className="text-xs leading-relaxed text-text-muted">{portal.description}</p>
++                  </div>
++                  <div className={`mt-6 flex items-center gap-2 text-xs font-bold ${portal.active ? "text-brand-primary" : "text-text-muted"}`}>
++                    {portal.active ? "ENTER PORTAL" : "COMING LATER"}
++                    <ArrowRight className="h-3 w-3" />
++                  </div>
++                </div>
++              </Link>
++            ))}
++          </div>
++        </section>
++      </main>
++
++      <footer className="z-10 mt-auto flex min-h-10 items-center justify-between border-t border-border bg-background px-5 py-2 text-[10px] text-text-muted md:px-8">
++        <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
++          <span className="flex items-center gap-1.5">
++            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
++            System UI Ready
++          </span>
++          <span>Development Build</span>
++        </div>
++        <div className="hidden items-center gap-4 md:flex">
++          <span>Secure Internal Access</span>
++        </div>
++      </footer>
++    </div>
++  );
++}
+diff --git a/src/features/admin/pages/lms/LMSDashboard.tsx b/src/features/admin/pages/lms/LMSDashboard.tsx
+new file mode 100644
+index 0000000..babc983
+--- /dev/null
++++ b/src/features/admin/pages/lms/LMSDashboard.tsx
+@@ -0,0 +1,183 @@
++"use client";
++
++import {
++  BookOpen,
++  GraduationCap,
++  PlayCircle,
++  FileText,
++  MoreHorizontal,
++} from "lucide-react";
++import {
++  Card,
++  CardContent,
++  CardHeader,
++  CardTitle,
++  CardDescription,
++} from "@/features/admin/components/ui/card";
++import { Button } from "@/features/admin/components/ui/button";
++import { Badge } from "@/features/admin/components/ui/badge";
++import {
++  Table,
++  TableBody,
++  TableCell,
++  TableHead,
++  TableHeader,
++  TableRow,
++} from "@/features/admin/components/ui/table";
++
++export default function LMSDashboard() {
++  return (
++    <div className="space-y-6">
++      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
++        <div>
++          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-brand-primary">
++            LMS Management
++          </p>
++          <h1 className="text-2xl font-bold tracking-tight text-foreground">LMS Overview</h1>
++          <p className="text-text-secondary">
++            Manage learning operations, classes, content, assignments and performance.
++          </p>
++        </div>
++        <div className="flex flex-wrap gap-2">
++          <Button variant="outline">New Announcement</Button>
++          <Button>Schedule Class</Button>
++        </div>
++      </div>
++
++      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
++        <Card>
++          <CardContent className="p-6">
++            <div className="mb-4 flex items-center justify-between">
++              <p className="text-sm font-medium text-text-muted">Active Classes</p>
++              <div className="rounded-[var(--radius-sm)] bg-[var(--color-success-soft)] p-2 text-success">
++                <BookOpen className="h-4 w-4" />
++              </div>
++            </div>
++            <h2 className="text-3xl font-bold">12</h2>
++            <p className="mt-1 text-sm font-medium text-text-muted">This week</p>
++          </CardContent>
++        </Card>
++
++        <Card>
++          <CardContent className="p-6">
++            <div className="mb-4 flex items-center justify-between">
++              <p className="text-sm font-medium text-text-muted">Pending Assignments</p>
++              <div className="rounded-[var(--radius-sm)] bg-[var(--color-warning-soft)] p-2 text-warning">
++                <FileText className="h-4 w-4" />
++              </div>
++            </div>
++            <h2 className="text-3xl font-bold">48</h2>
++            <p className="mt-1 text-sm font-medium text-text-muted">Needs grading</p>
++          </CardContent>
++        </Card>
++
++        <Card>
++          <CardContent className="p-6">
++            <div className="mb-4 flex items-center justify-between">
++              <p className="text-sm font-medium text-text-muted">Recent Recordings</p>
++              <div className="rounded-[var(--radius-sm)] bg-[var(--color-info-soft)] p-2 text-info">
++                <PlayCircle className="h-4 w-4" />
++              </div>
++            </div>
++            <h2 className="text-3xl font-bold text-foreground">5</h2>
++            <p className="mt-1 text-sm font-medium text-text-muted">Unpublished</p>
++          </CardContent>
++        </Card>
++
++        <Card>
++          <CardContent className="p-6">
++            <div className="mb-4 flex items-center justify-between">
++              <p className="text-sm font-medium text-text-muted">Certificates Issued</p>
++              <div className="rounded-[var(--radius-sm)] bg-[var(--color-primary-soft)] p-2 text-brand-primary">
++                <GraduationCap className="h-4 w-4" />
++              </div>
++            </div>
++            <h2 className="text-3xl font-bold">156</h2>
++            <p className="mt-1 text-sm font-medium text-text-muted">All time</p>
++          </CardContent>
++        </Card>
++      </div>
++
++      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
++        <Card>
++          <CardHeader>
++            <CardTitle>Upcoming Classes</CardTitle>
++            <CardDescription>Scheduled sessions for the next 7 days</CardDescription>
++          </CardHeader>
++          <CardContent className="overflow-x-auto">
++            <Table>
++              <TableHeader>
++                <TableRow>
++                  <TableHead>Class</TableHead>
++                  <TableHead>Date & Time</TableHead>
++                  <TableHead>Instructor</TableHead>
++                </TableRow>
++              </TableHeader>
++              <TableBody>
++                {[
++                  { title: "React State Management", time: "Today, 14:00", inst: "N. Perera", status: "Online" },
++                  { title: "Graphic Design Intro", time: "Tomorrow, 09:00", inst: "S. Silva", status: "In-house" },
++                  { title: "Node.js Basics", time: "28 Aug, 13:00", inst: "R. Fernando", status: "Online" },
++                  { title: "Database Normalization", time: "29 Aug, 10:00", inst: "N. Perera", status: "Online" },
++                ].map((course) => (
++                  <TableRow key={`${course.title}-${course.time}`}>
++                    <TableCell>
++                      <div className="font-medium text-foreground">{course.title}</div>
++                      <Badge variant="outline" className="mt-1 h-4 text-[10px] leading-none">
++                        {course.status}
++                      </Badge>
++                    </TableCell>
++                    <TableCell className="text-text-secondary">{course.time}</TableCell>
++                    <TableCell className="text-text-secondary">{course.inst}</TableCell>
++                  </TableRow>
++                ))}
++              </TableBody>
++            </Table>
++          </CardContent>
++        </Card>
++
++        <Card>
++          <CardHeader>
++            <CardTitle>Needs Grading</CardTitle>
++            <CardDescription>Recent assignment submissions</CardDescription>
++          </CardHeader>
++          <CardContent>
++            <div className="space-y-4">
++              {[
++                { title: "Build a Portfolio Site", course: "Web Development", count: 12, due: "Yesterday" },
++                { title: "Logo Redesign", course: "Graphic Design", count: 8, due: "Today" },
++                { title: "Data Cleaning Exercise", course: "Data Science", count: 28, due: "2 days ago" },
++              ].map((item) => (
++                <div
++                  key={item.title}
++                  className="flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-border p-3 transition-colors hover:border-brand-primary/30"
++                >
++                  <div className="flex min-w-0 items-center gap-3">
++                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-warning-soft)] text-warning">
++                      <FileText className="h-5 w-5" />
++                    </div>
++                    <div className="min-w-0">
++                      <h4 className="truncate text-sm font-medium text-foreground">{item.title}</h4>
++                      <p className="truncate text-xs text-text-muted">
++                        {item.course} • Due {item.due}
++                      </p>
++                    </div>
++                  </div>
++                  <div className="flex shrink-0 items-center gap-3 text-right">
++                    <div className="text-center">
++                      <span className="block text-lg font-bold leading-none text-foreground">{item.count}</span>
++                      <span className="text-[10px] font-medium uppercase tracking-wider text-text-muted">Pending</span>
++                    </div>
++                    <Button variant="ghost" size="icon" className="h-8 w-8">
++                      <MoreHorizontal className="h-4 w-4" />
++                    </Button>
++                  </div>
++                </div>
++              ))}
++            </div>
++          </CardContent>
++        </Card>
++      </div>
++    </div>
++  );
++}

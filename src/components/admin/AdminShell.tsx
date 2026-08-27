@@ -21,6 +21,7 @@ import {
   Megaphone,
   Award,
   MessagesSquare,
+  UserPlus,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { Button } from "@/features/admin/components/ui/button";
@@ -38,37 +39,28 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 const navGroups = [
-  { title: "OVERVIEW", items: [{ label: "Dashboard", path: "/dashboard", icon: LayoutDashboard }] },
+  {
+    title: "OVERVIEW",
+    items: [{ label: "Dashboard", path: "/dashboard", icon: LayoutDashboard }],
+  },
   {
     title: "PEOPLE",
     items: [
       { label: "Students", path: "/students", icon: Users },
       { label: "Instructors", path: "/instructors", icon: Briefcase },
+      { label: "Staff & Admin", path: "/staff", icon: UserPlus },
     ],
   },
   {
-    title: "LEARNING",
+    title: "ACADEMIC",
     items: [
-      { label: "Courses", path: "/courses", icon: BookOpen },
+      { label: "Programmes & Courses", path: "/courses", icon: BookOpen },
       { label: "Intakes", path: "/intakes", icon: GraduationCap },
-      { label: "Enrollments", path: "/enrollments", icon: ClipboardList },
-      { label: "Assignments", path: "/assignments", icon: ClipboardList },
-      { label: "Quizzes", path: "/quizzes", icon: FileQuestion },
-    ],
-  },
-  {
-    title: "COMMUNICATION",
-    items: [
-      { label: "Announcements", path: "/announcements", icon: Megaphone },
-      { label: "Messages", path: "/messages", icon: MessagesSquare },
     ],
   },
   {
     title: "SYSTEM",
-    items: [
-      { label: "Certificates", path: "/certificates", icon: Award },
-      { label: "Settings", path: "/settings", icon: Settings },
-    ],
+    items: [{ label: "Settings", path: "/settings", icon: Settings }],
   },
 ];
 
@@ -77,7 +69,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
       <div className="h-20 flex items-center px-5 border-b border-border">
-        <Link to="/dashboard" onClick={onNavigate} className="flex items-center min-w-0">
+        <Link to="/" onClick={onNavigate} className="flex items-center min-w-0">
           <img src="/brand/nenasala-logo.png" alt="Nenasala" className="h-10 w-auto max-w-[170px] object-contain" />
           <span className="sr-only">Nenasala Admin Portal</span>
         </Link>
