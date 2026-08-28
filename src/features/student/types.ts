@@ -21,6 +21,25 @@ export type CalendarEvent = {
   courseTitle: string;
   description?: string;
   link?: string;
+  provider?: string;
+  status?: 'scheduled' | 'live';
+};
+
+export type RecordingPlayerType = 'embed' | 'video' | 'external';
+
+export type CourseRecording = {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  className: string;
+  title: string;
+  description?: string;
+  provider?: string;
+  durationSeconds?: number;
+  recordedAt?: string;
+  required: boolean;
+  playerType: RecordingPlayerType;
+  playerUrl?: string;
 };
 
 export type Instructor = {
