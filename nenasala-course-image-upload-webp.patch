@@ -1,0 +1,269 @@
+diff --git a/src/features/admin/pages/admin/CoursesList.tsx b/src/features/admin/pages/admin/CoursesList.tsx
+index c0e4daf..5bb413b 100644
+--- a/src/features/admin/pages/admin/CoursesList.tsx
++++ b/src/features/admin/pages/admin/CoursesList.tsx
+@@ -1,7 +1,7 @@
+ "use client";
+ 
+-import { useMemo, useState, useTransition } from "react";
+-import { Plus, Search, MoreHorizontal, LayoutGrid, List as ListIcon, Pencil, Eye, LockKeyhole } from "lucide-react";
++import { useMemo, useRef, useState, useTransition } from "react";
++import { Plus, Search, MoreHorizontal, LayoutGrid, List as ListIcon, Pencil, Eye, LockKeyhole, ImagePlus, UploadCloud, X } from "lucide-react";
+ import { toast } from "sonner";
+ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../../components/ui/card";
+ import { Button } from "../../components/ui/button";
+@@ -15,6 +15,7 @@ import type { CourseRecord } from "@/lib/services/courses";
+ import type { ProgrammeRecord } from "@/lib/services/programmes";
+ import { saveCourseAction } from "@/app/internal/[accessKey]/(portal)/courses/actions";
+ import { ProgrammesPanel } from "./ProgrammesPanel";
++import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client";
+ 
+ function statusVariant(status: CourseRecord["status"]) {
+   if (status === "published") return "success" as const;
+@@ -34,6 +35,52 @@ function makeSlug(value: string) {
+     .replace(/^-+|-+$/g, "");
+ }
+ 
++
++const COURSE_IMAGE_MAX_SOURCE_BYTES = 12 * 1024 * 1024;
++const COURSE_IMAGE_TARGET_WIDTH = 1600;
++const COURSE_IMAGE_WEBP_QUALITY = 0.82;
++
++async function convertImageToWebp(file: File): Promise<File> {
++  if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
++    throw new Error('Please choose a PNG, JPG, JPEG or WebP image.');
++  }
++  if (file.size > COURSE_IMAGE_MAX_SOURCE_BYTES) {
++    throw new Error('The source image must be 12 MB or smaller.');
++  }
++
++  const bitmap = await createImageBitmap(file);
++  const scale = Math.min(1, COURSE_IMAGE_TARGET_WIDTH / bitmap.width);
++  const width = Math.max(1, Math.round(bitmap.width * scale));
++  const height = Math.max(1, Math.round(bitmap.height * scale));
++  const canvas = document.createElement('canvas');
++  canvas.width = width;
++  canvas.height = height;
++  const context = canvas.getContext('2d');
++  if (!context) {
++    bitmap.close();
++    throw new Error('Your browser could not prepare this image.');
++  }
++  context.drawImage(bitmap, 0, 0, width, height);
++  bitmap.close();
++
++  const blob = await new Promise<Blob | null>((resolve) =>
++    canvas.toBlob(resolve, 'image/webp', COURSE_IMAGE_WEBP_QUALITY),
++  );
++  if (!blob) throw new Error('Unable to convert the image to WebP.');
++
++  const baseName = file.name.replace(/\.[^/.]+$/, '') || 'course-image';
++  return new File([blob], `${baseName}.webp`, { type: 'image/webp' });
++}
++
++function safeStorageName(value: string) {
++  return value
++    .normalize('NFKD')
++    .toLowerCase()
++    .replace(/[^a-z0-9]+/g, '-')
++    .replace(/^-+|-+$/g, '')
++    .slice(0, 70) || 'course';
++}
++
+ const EMPTY_COURSE: CourseRecord = {
+   id: "",
+   title: "",
+@@ -67,6 +114,10 @@ export default function CoursesList({
+   const [editing, setEditing] = useState<CourseRecord>(EMPTY_COURSE);
+   const [slugTouched, setSlugTouched] = useState(false);
+   const [isPending, startTransition] = useTransition();
++  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
++  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
++  const [isDragActive, setIsDragActive] = useState(false);
++  const fileInputRef = useRef<HTMLInputElement>(null);
+ 
+   const courses = useMemo(() => {
+     const query = search.trim().toLowerCase();
+@@ -78,26 +129,89 @@ export default function CoursesList({
+     );
+   }, [initialCourses, search]);
+ 
++  function resetThumbnailDraft() {
++    if (thumbnailPreview?.startsWith("blob:")) URL.revokeObjectURL(thumbnailPreview);
++    setThumbnailFile(null);
++    setThumbnailPreview(null);
++    setIsDragActive(false);
++  }
++
+   function openNewCourse() {
++    resetThumbnailDraft();
+     setEditing(EMPTY_COURSE);
+     setSlugTouched(false);
+     setEditorOpen(true);
+   }
+ 
+   function openEditCourse(course: CourseRecord) {
++    resetThumbnailDraft();
+     setEditing(course);
+     setSlugTouched(true);
+     setEditorOpen(true);
+   }
+ 
++  async function prepareThumbnail(file: File) {
++    try {
++      const converted = await convertImageToWebp(file);
++      if (converted.size > 3 * 1024 * 1024) {
++        throw new Error('The converted image is still larger than 3 MB. Please use a smaller image.');
++      }
++      if (thumbnailPreview?.startsWith('blob:')) URL.revokeObjectURL(thumbnailPreview);
++      setThumbnailFile(converted);
++      setThumbnailPreview(URL.createObjectURL(converted));
++      toast.success(`Image ready as WebP • ${(converted.size / 1024).toFixed(0)} KB`);
++    } catch (error) {
++      toast.error(error instanceof Error ? error.message : 'Unable to prepare that image.');
++    }
++  }
++
++  function removeThumbnail() {
++    resetThumbnailDraft();
++    setEditing((course) => ({ ...course, thumbnail_url: null }));
++  }
++
+   function submitCourse(formData: FormData) {
+     startTransition(async () => {
++      let uploadedPath: string | null = null;
++      if (thumbnailFile) {
++        try {
++          const supabase = createBrowserSupabaseClient();
++          const courseKey = safeStorageName(editing.slug || editing.title);
++          uploadedPath = `${courseKey}/${crypto.randomUUID()}.webp`;
++          const { error: uploadError } = await supabase.storage
++            .from('course-images')
++            .upload(uploadedPath, thumbnailFile, {
++              cacheControl: '31536000',
++              contentType: 'image/webp',
++              upsert: false,
++            });
++          if (uploadError) throw uploadError;
++          const { data } = supabase.storage.from('course-images').getPublicUrl(uploadedPath);
++          formData.set('thumbnail_url', data.publicUrl);
++        } catch (error) {
++          console.error('Unable to upload course thumbnail:', error);
++          toast.error('Unable to upload the course image. Your other changes were not saved.');
++          return;
++        }
++      } else {
++        formData.set('thumbnail_url', editing.thumbnail_url ?? '');
++      }
++
+       const result = await saveCourseAction(formData);
+       if (!result.ok) {
++        if (uploadedPath) {
++          try {
++            const supabase = createBrowserSupabaseClient();
++            await supabase.storage.from('course-images').remove([uploadedPath]);
++          } catch {
++            // Best-effort cleanup only.
++          }
++        }
+         toast.error(result.error ?? "Unable to save course.");
+         return;
+       }
+       toast.success(editing.id ? "Course updated." : "Course created.");
++      resetThumbnailDraft();
+       setEditorOpen(false);
+     });
+   }
+@@ -221,8 +335,8 @@ export default function CoursesList({
+         </TabsContent>
+       </Tabs>
+ 
+-      <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
++      <Dialog open={editorOpen} onOpenChange={(open) => { if (!open) resetThumbnailDraft(); setEditorOpen(open); }}>
++        <DialogContent className="max-h-[90vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:max-w-2xl">
+           <DialogHeader>
+             <DialogTitle>{editing.id ? "Edit Course" : "Create Course"}</DialogTitle>
+             <DialogDescription>
+@@ -316,8 +430,79 @@ export default function CoursesList({
+             </div>
+ 
+             <div className="space-y-2">
+-              <Label htmlFor="thumbnail_url">Thumbnail URL</Label>
+-              <Input id="thumbnail_url" name="thumbnail_url" value={editing.thumbnail_url ?? ""} onChange={(event) => setEditing((course) => ({ ...course, thumbnail_url: event.target.value }))} placeholder="https://..." />
++              <Label>Course thumbnail</Label>
++              <input type="hidden" name="thumbnail_url" value={editing.thumbnail_url ?? ""} />
++              <input
++                ref={fileInputRef}
++                type="file"
++                accept="image/png,image/jpeg,image/jpg,image/webp"
++                className="sr-only"
++                onChange={(event) => {
++                  const file = event.target.files?.[0];
++                  if (file) void prepareThumbnail(file);
++                  event.currentTarget.value = '';
++                }}
++              />
++              <div
++                role="button"
++                tabIndex={0}
++                onClick={() => fileInputRef.current?.click()}
++                onKeyDown={(event) => {
++                  if (event.key === 'Enter' || event.key === ' ') {
++                    event.preventDefault();
++                    fileInputRef.current?.click();
++                  }
++                }}
++                onDragEnter={(event) => { event.preventDefault(); setIsDragActive(true); }}
++                onDragOver={(event) => { event.preventDefault(); setIsDragActive(true); }}
++                onDragLeave={(event) => { event.preventDefault(); setIsDragActive(false); }}
++                onDrop={(event) => {
++                  event.preventDefault();
++                  setIsDragActive(false);
++                  const file = event.dataTransfer.files?.[0];
++                  if (file) void prepareThumbnail(file);
++                }}
++                className={`group relative overflow-hidden rounded-[var(--radius-md)] border-2 border-dashed p-4 transition-colors outline-none focus:ring-2 focus:ring-brand-primary/40 ${
++                  isDragActive ? 'border-brand-primary bg-brand-primary/5' : 'border-border hover:border-brand-primary/45'
++                }`}
++              >
++                {(thumbnailPreview || editing.thumbnail_url) ? (
++                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
++                    <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[var(--radius-sm)] bg-surface-elevated sm:w-44">
++                      <img
++                        src={thumbnailPreview || editing.thumbnail_url || ''}
++                        alt="Course thumbnail preview"
++                        className="h-full w-full object-cover"
++                      />
++                    </div>
++                    <div className="min-w-0 flex-1">
++                      <p className="font-medium text-foreground">{thumbnailFile ? 'New WebP ready to upload' : 'Current course image'}</p>
++                      <p className="mt-1 text-sm text-text-muted">
++                        {thumbnailFile
++                          ? `${thumbnailFile.name} • ${(thumbnailFile.size / 1024).toFixed(0)} KB`
++                          : 'Drop a replacement image here or click to choose one.'}
++                      </p>
++                      <div className="mt-3 flex flex-wrap gap-2">
++                        <Button type="button" size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }}>
++                          <ImagePlus className="mr-2 h-4 w-4" /> Replace
++                        </Button>
++                        <Button type="button" size="sm" variant="ghost" onClick={(event) => { event.stopPropagation(); removeThumbnail(); }}>
++                          <X className="mr-2 h-4 w-4" /> Remove
++                        </Button>
++                      </div>
++                    </div>
++                  </div>
++                ) : (
++                  <div className="flex flex-col items-center px-4 py-7 text-center">
++                    <div className="mb-3 rounded-full bg-brand-primary/10 p-3 text-brand-primary">
++                      <UploadCloud className="h-5 w-5" />
++                    </div>
++                    <p className="font-medium text-foreground">Drop a course image here</p>
++                    <p className="mt-1 text-sm text-text-muted">or click to browse • PNG, JPG, JPEG or WebP</p>
++                    <p className="mt-2 text-xs text-text-muted">Automatically resized to max 1600px wide and stored as optimized WebP.</p>
++                  </div>
++                )}
++              </div>
+             </div>
+ 
+             <label className="flex items-start gap-3 rounded-[var(--radius-sm)] border border-border p-3">
