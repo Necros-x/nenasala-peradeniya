@@ -63,6 +63,7 @@ export default function AssignmentsManager({ classes, assignments, submissions, 
   const [editing, setEditing] = useState<AdminAssignmentRecord | null>(null);
   const [gradeOpen, setGradeOpen] = useState(false);
   const [grading, setGrading] = useState<AdminSubmissionRecord | null>(null);
+  const [resubmissionTarget, setResubmissionTarget] = useState<AdminSubmissionRecord | null>(null);
   const [saving, setSaving] = useState(false);
 
   const activeClasses = useMemo(() => classes.filter((item) => item.status !== "cancelled"), [classes]);
@@ -126,10 +127,15 @@ export default function AssignmentsManager({ classes, assignments, submissions, 
   }
 
 
-  async function allowResubmission(item: AdminSubmissionRecord) {
+  function beginResubmission(item: AdminSubmissionRecord) {
     if (readOnlyDemo) return toast.error("Demo mode is read-only.");
     if (item.resubmission_allowed) return toast.info("Resubmission is already enabled for this student.");
-    if (!window.confirm(`Enable one resubmission attempt for ${item.student_name}? They will receive a notification.`)) return;
+    setResubmissionTarget(item);
+  }
+
+  async function confirmResubmission() {
+    const item = resubmissionTarget;
+    if (!item) return;
 
     setSaving(true);
     try {
@@ -139,6 +145,7 @@ export default function AssignmentsManager({ classes, assignments, submissions, 
       const result = await enableResubmissionAction(formData);
       if (!result.ok) return toast.error(result.error ?? "Unable to enable resubmission.");
       toast.success("Resubmission enabled and student notified");
+      setResubmissionTarget(null);
       router.refresh();
     } finally {
       setSaving(false);
@@ -211,7 +218,7 @@ export default function AssignmentsManager({ classes, assignments, submissions, 
                     <td className="px-5 py-4 text-text-secondary">{formatDate(item.submitted_at)}</td>
                     <td className="px-5 py-4"><div className="flex flex-wrap items-center gap-2"><Badge variant={submissionVariant(item.status)}>{item.status}</Badge>{item.resubmission_allowed && <Badge variant="warning">Resubmission open</Badge>}</div></td>
                     <td className="px-5 py-4 font-semibold">{item.score == null ? "—" : `${item.score}/${item.max_points}`}</td>
-                    <td className="px-5 py-4 text-right"><div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => beginGrade(item)} disabled={readOnlyDemo}>{item.status === "graded" ? "Review grade" : "Grade"}</Button><Button size="sm" variant="outline" onClick={() => allowResubmission(item)} disabled={readOnlyDemo || saving || item.resubmission_allowed}><RotateCcw className="mr-2 h-4 w-4" /> {item.resubmission_allowed ? "Resubmission enabled" : "Enable resubmission"}</Button></div></td>
+                    <td className="px-5 py-4 text-right"><div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => beginGrade(item)} disabled={readOnlyDemo}>{item.status === "graded" ? "Review grade" : "Grade"}</Button><Button size="sm" variant="outline" onClick={() => beginResubmission(item)} disabled={readOnlyDemo || saving || item.resubmission_allowed}><RotateCcw className="mr-2 h-4 w-4" /> {item.resubmission_allowed ? "Resubmission enabled" : "Enable resubmission"}</Button></div></td>
                   </tr>
                 ))}
               </tbody>
@@ -219,6 +226,52 @@ export default function AssignmentsManager({ classes, assignments, submissions, 
           </div>
         </Card>
       )}
+
+      <Dialog
+        open={Boolean(resubmissionTarget)}
+        onOpenChange={(open) => {
+          if (!open && !saving) setResubmissionTarget(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mb-3 grid h-12 w-12 place-items-center rounded-[var(--radius-sm)] bg-[var(--color-primary-soft)] text-brand-primary">
+              <RotateCcw className="h-5 w-5" />
+            </div>
+            <DialogTitle>Enable resubmission?</DialogTitle>
+            <DialogDescription>
+              This will unlock exactly one additional submission attempt for this student.
+            </DialogDescription>
+          </DialogHeader>
+
+          {resubmissionTarget && (
+            <div className="space-y-3 py-2">
+              <div className="rounded-[var(--radius-sm)] border border-border bg-surface-muted/50 p-4">
+                <p className="font-semibold text-foreground">{resubmissionTarget.student_name}</p>
+                <p className="mt-1 text-sm text-text-secondary">{resubmissionTarget.assignment_title}</p>
+                <p className="mt-2 text-xs text-text-muted">
+                  Previous extra attempts used: {resubmissionTarget.resubmission_count}
+                </p>
+              </div>
+
+              <p className="text-sm leading-relaxed text-text-secondary">
+                The submission will reopen for one attempt only. After the student resubmits,
+                it locks automatically again. The student will also receive a personal notification.
+              </p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setResubmissionTarget(null)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={confirmResubmission} disabled={saving || !resubmissionTarget}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              {saving ? "Enabling..." : "Enable Resubmission"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={assignmentOpen} onOpenChange={setAssignmentOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
