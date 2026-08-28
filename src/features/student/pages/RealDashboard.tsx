@@ -1,12 +1,15 @@
 import Link from "next/link";
 import {
+  AlertTriangle,
   BookOpen,
   CalendarDays,
   CheckCircle2,
   ChevronRight,
+  ClipboardList,
   Film,
   PlayCircle,
   Radio,
+  RotateCcw,
 } from "lucide-react";
 import { Badge } from "@/features/student/components/ui/Badge";
 import { Button } from "@/features/student/components/ui/Button";
@@ -48,6 +51,23 @@ function formatEventDate(value: string) {
     month: "short",
     timeZone: "Asia/Colombo",
   }).format(new Date(value));
+}
+
+function upcomingEventIcon(event: StudentDashboardData["upcomingEvents"][number]) {
+  if (event.status === "live") return <Radio className="h-5 w-5" />;
+  if (event.type !== "deadline") return <CalendarDays className="h-5 w-5" />;
+  if (event.assignmentState === "overdue") return <AlertTriangle className="h-5 w-5" />;
+  if (event.assignmentState === "resubmission") return <RotateCcw className="h-5 w-5" />;
+  return <ClipboardList className="h-5 w-5" />;
+}
+
+function upcomingEventBadge(event: StudentDashboardData["upcomingEvents"][number]) {
+  if (event.status === "live") return <Badge variant="error">Live</Badge>;
+  if (event.type !== "deadline") return null;
+  if (event.assignmentState === "overdue") return <Badge variant="error">Overdue</Badge>;
+  if (event.assignmentState === "due_soon") return <Badge variant="warning">Due soon</Badge>;
+  if (event.assignmentState === "resubmission") return <Badge variant="default">Resubmission open</Badge>;
+  return <Badge variant="warning">Assignment due</Badge>;
 }
 
 export default function RealDashboard({ data }: { data: StudentDashboardData }) {
@@ -206,27 +226,38 @@ export default function RealDashboard({ data }: { data: StudentDashboardData }) 
                 <div className="p-6 text-center">
                   <CalendarDays className="mx-auto mb-3 h-7 w-7 text-[var(--color-text-muted)]" />
                   <p className="font-semibold text-[var(--color-text-primary)]">Nothing scheduled</p>
-                  <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Your next live session will appear here.</p>
+                  <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Live sessions and assignment deadlines will appear here.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-[var(--color-border)]">
                   {data.upcomingEvents.map((event) => (
                     <div key={event.id} className="p-4">
                       <div className="flex items-start gap-3">
-                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius-sm)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-                          {event.status === "live" ? <Radio className="h-5 w-5" /> : <CalendarDays className="h-5 w-5" />}
+                        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius-sm)] ${
+                          event.assignmentState === "overdue"
+                            ? "bg-[var(--color-error-soft)] text-[var(--color-error)]"
+                            : event.assignmentState === "due_soon"
+                              ? "bg-[var(--color-warning-soft)] text-[var(--color-warning)]"
+                              : "bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
+                        }`}>
+                          {upcomingEventIcon(event)}
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="font-semibold text-[var(--color-text-primary)]">{event.title}</p>
-                            {event.status === "live" && <Badge variant="error">Live</Badge>}
+                            {upcomingEventBadge(event)}
                           </div>
                           <p className="mt-1 text-xs text-[var(--color-text-muted)]">{event.courseTitle}</p>
                           <p className="mt-2 text-xs font-medium text-[var(--color-text-secondary)]">{formatEventDate(event.date)} • {event.time ?? "Time TBA"}</p>
-                          {event.link && (
+                          {event.link && event.type === "live_session" && (
                             <a href={event.link} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-xs font-bold text-[var(--color-primary)] hover:underline">
                               Join session
                             </a>
+                          )}
+                          {event.link && event.type === "deadline" && (
+                            <Link href={event.link} className="mt-3 inline-flex text-xs font-bold text-[var(--color-primary)] hover:underline">
+                              Open assignment
+                            </Link>
                           )}
                         </div>
                       </div>

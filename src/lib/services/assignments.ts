@@ -2,6 +2,7 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import type { CalendarEvent } from "@/features/student/types";
 
 export type AssignmentStatus = "draft" | "published" | "closed" | "archived";
 export type SubmissionStatus = "draft" | "submitted" | "late" | "graded" | "returned";
@@ -89,6 +90,65 @@ function firstRelation<T>(value: T | T[] | null | undefined): T | null {
 function numeric(value: unknown): number {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+const DUE_SOON_MS = 48 * 60 * 60 * 1000;
+
+function assignmentState(assignment: StudentAssignmentRecord): NonNullable<CalendarEvent["assignmentState"]> {
+  const submission = assignment.submission;
+  if (submission?.status === "graded") return "graded";
+  if (submission?.resubmission_allowed) return "resubmission";
+  if (submission && ["submitted", "late", "returned"].includes(submission.status)) return "submitted";
+
+  if (!assignment.due_at) return "due";
+  const remaining = new Date(assignment.due_at).getTime() - Date.now();
+  if (remaining < 0) return "overdue";
+  if (remaining <= DUE_SOON_MS) return "due_soon";
+  return "due";
+}
+
+function formatDueTime(value: string) {
+  return new Intl.DateTimeFormat("en-LK", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Colombo",
+  }).format(new Date(value));
+}
+
+async function syncAssignmentPublicationNotifications(
+  studentId: string,
+  assignments: StudentAssignmentRecord[]
+) {
+  if (assignments.length === 0) return;
+
+  try {
+    const adminClient = createAdminClient();
+    const rows = assignments.map((assignment) => ({
+      user_id: studentId,
+      title: "New assignment published",
+      message: assignment.due_at
+        ? `“${assignment.title}” is now available and is due ${new Intl.DateTimeFormat("en-LK", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            timeZone: "Asia/Colombo",
+          }).format(new Date(assignment.due_at))}.`
+        : `“${assignment.title}” is now available in ${assignment.course_title}.`,
+      type: "assignment",
+      link: `/student/assignments/${assignment.id}`,
+      source_key: `assignment-published:${assignment.id}`,
+    }));
+
+    const { error } = await adminClient
+      .from("notifications")
+      .upsert(rows, { onConflict: "user_id,source_key", ignoreDuplicates: true });
+    if (error) console.error("Unable to sync assignment publication notifications:", error.message);
+  } catch (error) {
+    console.error("Unable to sync assignment publication notifications:", error);
+  }
 }
 
 const ADMIN_ASSIGNMENT_COLUMNS =
@@ -255,7 +315,28 @@ export async function getCurrentStudentAssignments(): Promise<StudentAssignmentR
     return [];
   }
 
-  return (data ?? []).map(mapStudentAssignment);
+  const assignments = (data ?? []).map(mapStudentAssignment);
+  await syncAssignmentPublicationNotifications(userData.user.id, assignments);
+  return assignments;
+}
+
+export async function getCurrentStudentAssignmentEvents(): Promise<CalendarEvent[]> {
+  const assignments = await getCurrentStudentAssignments();
+
+  return assignments
+    .filter((assignment) => Boolean(assignment.due_at))
+    .map((assignment) => ({
+      id: `assignment:${assignment.id}`,
+      title: assignment.title,
+      type: "deadline" as const,
+      date: assignment.due_at as string,
+      time: `Due ${formatDueTime(assignment.due_at as string)}`,
+      courseTitle: assignment.course_title,
+      description: assignment.description ?? undefined,
+      link: `/student/assignments/${assignment.id}`,
+      assignmentState: assignmentState(assignment),
+    }))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
 export async function getCurrentStudentAssignment(assignmentId: string): Promise<StudentAssignmentRecord | null> {

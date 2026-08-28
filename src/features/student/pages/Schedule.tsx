@@ -2,7 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Calendar as CalendarIcon, ChevronRight, ClipboardList, Clock, Loader2, Radio, Video } from "lucide-react";
+import {
+  AlertTriangle,
+  Calendar as CalendarIcon,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  Clock,
+  Loader2,
+  Radio,
+  RotateCcw,
+  Video,
+} from "lucide-react";
 import { Card } from "@/features/student/components/ui/Card";
 import { Badge } from "@/features/student/components/ui/Badge";
 import { getEvents } from "@/features/student/lib/services";
@@ -31,7 +42,15 @@ export default function Schedule({ initialEvents }: { initialEvents?: CalendarEv
       return <Radio className="h-5 w-5 text-[var(--color-error)]" />;
     }
     if (event.type === "live_session") return <Video className="h-5 w-5 text-[var(--color-primary)]" />;
-    if (event.type === "deadline") return <Clock className="h-5 w-5 text-[var(--color-warning)]" />;
+    if (event.type === "deadline") {
+      if (event.assignmentState === "overdue") return <AlertTriangle className="h-5 w-5 text-[var(--color-error)]" />;
+      if (event.assignmentState === "submitted" || event.assignmentState === "graded") {
+        return <CheckCircle2 className="h-5 w-5 text-[var(--color-success)]" />;
+      }
+      if (event.assignmentState === "resubmission") return <RotateCcw className="h-5 w-5 text-[var(--color-primary)]" />;
+      if (event.assignmentState === "due_soon") return <Clock className="h-5 w-5 text-[var(--color-warning)]" />;
+      return <ClipboardList className="h-5 w-5 text-[var(--color-warning)]" />;
+    }
     return <ClipboardList className="h-5 w-5 text-[var(--color-success)]" />;
   };
 
@@ -40,8 +59,29 @@ export default function Schedule({ initialEvents }: { initialEvents?: CalendarEv
       return <Badge variant="error">Live now</Badge>;
     }
     if (event.type === "live_session") return <Badge variant="default">Live Session</Badge>;
-    if (event.type === "deadline") return <Badge variant="warning">Deadline</Badge>;
+    if (event.type === "deadline") {
+      if (event.assignmentState === "graded") return <Badge variant="success">Graded</Badge>;
+      if (event.assignmentState === "submitted") return <Badge variant="success">Submitted</Badge>;
+      if (event.assignmentState === "resubmission") return <Badge variant="default">Resubmission open</Badge>;
+      if (event.assignmentState === "overdue") return <Badge variant="error">Overdue</Badge>;
+      if (event.assignmentState === "due_soon") return <Badge variant="warning">Due soon</Badge>;
+      return <Badge variant="warning">Assignment due</Badge>;
+    }
     return <Badge variant="success">Assignment</Badge>;
+  };
+
+  const eventTone = (event: CalendarEvent) => {
+    if (event.type === "live_session") {
+      return event.status === "live"
+        ? "border-[var(--color-error)]/20 bg-[var(--color-error-soft)]"
+        : "border-[var(--color-primary-muted)] bg-[var(--color-primary-soft)]";
+    }
+    if (event.assignmentState === "overdue") return "border-[var(--color-error)]/20 bg-[var(--color-error-soft)]";
+    if (event.assignmentState === "submitted" || event.assignmentState === "graded") {
+      return "border-[var(--color-success)]/20 bg-[var(--color-success-soft)]";
+    }
+    if (event.assignmentState === "resubmission") return "border-[var(--color-primary-muted)] bg-[var(--color-primary-soft)]";
+    return "border-[var(--color-warning)]/20 bg-[var(--color-warning-soft)]";
   };
 
   const formatEventDate = (dateString: string) => {
@@ -65,7 +105,7 @@ export default function Schedule({ initialEvents }: { initialEvents?: CalendarEv
     <div className="mx-auto max-w-4xl space-y-8 pb-12">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)]">Event Schedule</h1>
-        <p className="mt-1 text-[var(--color-text-secondary)]">Your upcoming live classes, deadlines and learning events.</p>
+        <p className="mt-1 text-[var(--color-text-secondary)]">Your live classes, assignment deadlines, submissions and recent overdue work.</p>
       </div>
 
       <div className="space-y-4">
@@ -76,7 +116,7 @@ export default function Schedule({ initialEvents }: { initialEvents?: CalendarEv
                 <CalendarIcon className="h-8 w-8 text-[var(--color-secondary)]" />
               </div>
               <h3 className="mb-1 text-lg font-bold text-[var(--color-text-primary)]">Your schedule is clear!</h3>
-              <p className="text-[var(--color-text-secondary)]">No upcoming live classes or deadlines at the moment.</p>
+              <p className="text-[var(--color-text-secondary)]">No live classes or assignment deadlines to show at the moment.</p>
             </div>
           </Card>
         ) : (
@@ -97,13 +137,7 @@ export default function Schedule({ initialEvents }: { initialEvents?: CalendarEv
                     <div
                       className={cn(
                         "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border",
-                        event.type === "live_session"
-                          ? event.status === "live"
-                            ? "border-[var(--color-error)]/20 bg-[var(--color-error-soft)]"
-                            : "border-[var(--color-primary-muted)] bg-[var(--color-primary-soft)]"
-                          : event.type === "deadline"
-                            ? "border-[var(--color-warning)]/20 bg-[var(--color-warning-soft)]"
-                            : "border-[var(--color-success)]/20 bg-[var(--color-success-soft)]"
+                        eventTone(event)
                       )}
                     >
                       {getEventIcon(event)}

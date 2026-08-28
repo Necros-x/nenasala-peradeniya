@@ -60,7 +60,7 @@ async function reviewerContext(formData: FormData, submissionId: string) {
 
   const { data: submission, error: submissionError } = await adminClient
     .from("assignment_submissions")
-    .select("id,assignment_id,student_id,status,resubmission_allowed,assignments(title,max_points,status,class_id,classes(instructor_id))")
+    .select("id,assignment_id,student_id,status,resubmission_allowed,resubmission_count,assignments(title,max_points,status,class_id,classes(instructor_id))")
     .eq("id", submissionId)
     .maybeSingle();
   if (submissionError || !submission) return { error: "Submission could not be found." as const };
@@ -81,6 +81,61 @@ function revalidateReviewPaths(accessKey: string, assignmentId: string) {
   revalidatePath("/student/assignments");
   revalidatePath(`/student/assignments/${assignmentId}`);
   revalidatePath("/student/notifications");
+}
+
+async function notifyPublishedAssignment(
+  assignmentId: string,
+  classId: string,
+  title: string,
+  dueAt: string | null,
+  publishAt: string | null
+) {
+  if (publishAt && new Date(publishAt).getTime() > Date.now()) return;
+
+  try {
+    const adminClient = createAdminClient();
+    const { data: classRow, error: classError } = await adminClient
+      .from("classes")
+      .select("intake_id")
+      .eq("id", classId)
+      .maybeSingle();
+    if (classError || !classRow?.intake_id) return;
+
+    const { data: enrollments, error: enrollmentError } = await adminClient
+      .from("enrollments")
+      .select("student_id")
+      .eq("intake_id", classRow.intake_id)
+      .eq("status", "active");
+    if (enrollmentError || !enrollments?.length) return;
+
+    const dueText = dueAt
+      ? ` It is due ${new Intl.DateTimeFormat("en-LK", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          timeZone: "Asia/Colombo",
+        }).format(new Date(dueAt))}.`
+      : "";
+
+    const { error: notificationError } = await adminClient.from("notifications").upsert(
+      enrollments.map((enrollment) => ({
+        user_id: enrollment.student_id,
+        title: "New assignment published",
+        message: `“${title}” is now available.${dueText}`,
+        type: "assignment",
+        link: `/student/assignments/${assignmentId}`,
+        source_key: `assignment-published:${assignmentId}`,
+      })),
+      { onConflict: "user_id,source_key", ignoreDuplicates: true }
+    );
+    if (notificationError) {
+      console.error("Assignment saved but publication notifications failed:", notificationError.message);
+    }
+  } catch (error) {
+    console.error("Assignment saved but publication notifications failed:", error);
+  }
 }
 
 export async function saveAssignmentAction(formData: FormData): Promise<AssignmentActionState> {
@@ -109,7 +164,7 @@ export async function saveAssignmentAction(formData: FormData): Promise<Assignme
 
   const { data: classRow, error: classError } = await supabase
     .from("classes")
-    .select("id,status")
+    .select("id,status,intake_id")
     .eq("id", classId)
     .maybeSingle();
   if (classError || !classRow) return { ok: false, error: "The selected class could not be found." };
@@ -145,9 +200,15 @@ export async function saveAssignmentAction(formData: FormData): Promise<Assignme
     metadata: { class_id: classId, status, max_points: maxPoints },
   });
 
+  if (status === "published") {
+    await notifyPublishedAssignment(data.id, classId, title, dueAt, publishAt);
+  }
+
   revalidatePath(`/internal/${accessKey}/lms/assignments`);
   revalidatePath("/student/assignments");
   revalidatePath("/student/dashboard");
+  revalidatePath("/student/schedule");
+  revalidatePath("/student/notifications");
   return { ok: true };
 }
 
@@ -225,13 +286,15 @@ export async function enableResubmissionAction(formData: FormData): Promise<Assi
     return { ok: false, error: "Unable to enable resubmission." };
   }
 
-  const { error: notificationError } = await adminClient.from("notifications").insert({
+  const nextResubmissionAttempt = Number(submission.resubmission_count ?? 0) + 1;
+  const { error: notificationError } = await adminClient.from("notifications").upsert({
     user_id: submission.student_id,
     title: "Assignment resubmission enabled",
     message: `You can submit one new attempt for “${assignment.title}”. Open the assignment to resubmit your work.`,
     type: "assignment",
     link: `/student/assignments/${submission.assignment_id}`,
-  });
+    source_key: `assignment-resubmission:${submissionId}:${nextResubmissionAttempt}`,
+  }, { onConflict: "user_id,source_key", ignoreDuplicates: true });
   if (notificationError) {
     console.error("Resubmission was enabled but notification creation failed:", notificationError);
   }

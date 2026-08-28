@@ -48,7 +48,7 @@ export default function RealAssignmentDetails({ assignment }: { assignment: Stud
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!canSubmit) return;
+    if (!assignment || !canSubmit) return;
     setSaving(true);
     try {
       const result = await submitAssignmentAction(assignment.id, new FormData(event.currentTarget));

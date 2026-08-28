@@ -23,6 +23,7 @@ export type CalendarEvent = {
   link?: string;
   provider?: string;
   status?: 'scheduled' | 'live';
+  assignmentState?: 'due' | 'due_soon' | 'overdue' | 'submitted' | 'graded' | 'resubmission';
 };
 
 export type RecordingPlayerType = 'embed' | 'video' | 'external';
