@@ -40,6 +40,7 @@ export type CourseRecording = {
   required: boolean;
   playerType: RecordingPlayerType;
   playerUrl?: string;
+  completed?: boolean;
 };
 
 export type Instructor = {
@@ -80,6 +81,9 @@ export type Course = {
   modules: Module[];
   category: string;
   totalLessons: number;
+  completedLessons?: number;
+  progressPercent?: number;
+  continueLessonId?: string;
   price?: number;
   isNew?: boolean;
 };

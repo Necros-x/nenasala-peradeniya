@@ -17,6 +17,7 @@ import { Button } from "@/features/student/components/ui/Button";
 import { Skeleton } from "@/features/student/components/ui/Skeleton";
 import { getCourseById, markLessonComplete } from "@/features/student/lib/services";
 import type { Course, Lesson } from "@/features/student/types";
+import { completeLessonAction } from "@/lib/actions/student/progress";
 
 type Props = {
   initialCourse?: Course | null;
@@ -69,15 +70,31 @@ export default function LessonView({ initialCourse, initialLesson }: Props) {
 
   async function handleContinue() {
     if (!currentLesson || !courseId) return;
-    if (!realMode) {
-      setCompleting(true);
-      await markLessonComplete(courseId, currentLesson.id);
+
+    setCompleting(true);
+    const result = realMode
+      ? await completeLessonAction(courseId, currentLesson.id)
+      : { ok: await markLessonComplete(courseId, currentLesson.id) };
+
+    if (!result.ok) {
       setCompleting(false);
+      return;
     }
+
+    setCourse((current) => current ? {
+      ...current,
+      modules: current.modules.map((module) => ({
+        ...module,
+        lessons: module.lessons.map((lesson) =>
+          lesson.id === currentLesson.id ? { ...lesson, completed: true } : lesson
+        ),
+      })),
+    } : current);
 
     router.push(nextLesson
       ? `/student/courses/${courseId}/lesson/${nextLesson.id}`
       : `/student/courses/${courseId}`);
+    router.refresh();
   }
 
   function LessonIcon({ type, completed }: { type: string; completed?: boolean }) {
@@ -181,7 +198,7 @@ export default function LessonView({ initialCourse, initialLesson }: Props) {
                 </Button>
 
                 <Button className="w-full min-w-[200px] sm:w-auto" onClick={handleContinue} disabled={completing}>
-                  {completing ? "Completing..." : realMode ? (nextLesson ? "Next Lesson" : "Back to Course") : <>Mark Complete {nextLesson && "& Continue"}</>}
+                  {completing ? "Saving progress..." : currentLesson.completed ? (nextLesson ? "Next Lesson" : "Back to Course") : <>Mark Complete {nextLesson && "& Continue"}</>}
                   {!completing && <ChevronRight className="ml-2 h-4 w-4" />}
                 </Button>
               </div>

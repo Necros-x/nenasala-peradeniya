@@ -50,6 +50,8 @@ export default function CourseDetails({ initialCourse }: { initialCourse?: Cours
 
   const isDemoCourse = initialCourse === undefined;
   const demoProgress = course.id === "c_1" ? 35 : 0;
+  const realProgress = course.progressPercent ?? 0;
+  const progress = isDemoCourse ? demoProgress : realProgress;
 
   function LessonIcon({ type, completed, locked }: { type: string; completed?: boolean; locked?: boolean }) {
     if (locked) return <Lock className="h-5 w-5 text-[var(--color-text-muted)]" />;
@@ -60,6 +62,9 @@ export default function CourseDetails({ initialCourse }: { initialCourse?: Cours
   }
 
   const firstLesson = course.modules.flatMap((module) => module.lessons)[0];
+  const continueLesson = course.continueLessonId
+    ? course.modules.flatMap((module) => module.lessons).find((lesson) => lesson.id === course.continueLessonId)
+    : firstLesson;
 
   return (
     <div className="space-y-8 pb-12">
@@ -155,14 +160,18 @@ export default function CourseDetails({ initialCourse }: { initialCourse?: Cours
               </>
             ) : (
               <>
-                <h3 className="mb-2 text-lg font-bold">Start learning</h3>
-                <p className="mb-6 text-sm leading-relaxed text-[var(--color-text-secondary)]">Open a published lesson below. Lesson progress will be connected in the progress phase.</p>
+                <h3 className="mb-4 text-lg font-bold">Your Progress</h3>
+                <div className="mb-2 flex items-end gap-2 text-3xl font-semibold text-[var(--color-text-primary)]">
+                  {realProgress}% <span className="relative top-[-4px] mb-1 text-sm font-medium text-[var(--color-text-muted)]">Completed</span>
+                </div>
+                <Progress value={realProgress} className="mb-2 h-2" />
+                <p className="mb-6 text-sm text-[var(--color-text-secondary)]">{course.completedLessons ?? 0} of {course.totalLessons} lessons complete</p>
               </>
             )}
 
-            {firstLesson ? (
-              <Link href={`/student/courses/${course.id}/lesson/${firstLesson.id}`}>
-                <Button className="h-12 w-full text-lg">{isDemoCourse && demoProgress > 0 ? "Resume Course" : "Start Course"}</Button>
+            {continueLesson ? (
+              <Link href={`/student/courses/${course.id}/lesson/${continueLesson.id}`}>
+                <Button className="h-12 w-full text-lg">{progress > 0 ? "Continue Course" : "Start Course"}</Button>
               </Link>
             ) : (
               <Button className="h-12 w-full text-lg" disabled>Content coming soon</Button>

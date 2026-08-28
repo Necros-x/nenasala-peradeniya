@@ -143,6 +143,25 @@ export async function getCurrentStudentRecordings(): Promise<CourseRecording[]> 
     return [];
   }
 
+  const recordingIds = (data ?? []).map((row: any) => row.recording_id).filter(Boolean);
+  const completedRecordingIds = new Set<string>();
+
+  if (recordingIds.length > 0) {
+    const { data: progressRows, error: progressError } = await supabase
+      .from("recording_progress")
+      .select("recording_id,completed_at")
+      .eq("student_id", userData.user.id)
+      .in("recording_id", recordingIds);
+
+    if (progressError) {
+      console.error("Unable to load recording progress:", progressError.message);
+    } else {
+      for (const row of progressRows ?? []) {
+        if (row.completed_at) completedRecordingIds.add(row.recording_id);
+      }
+    }
+  }
+
   const byRecording = new Map<string, CourseRecording>();
 
   for (const row of data ?? []) {
@@ -165,6 +184,7 @@ export async function getCurrentStudentRecordings(): Promise<CourseRecording[]> 
       durationSeconds: recording.duration_seconds ?? undefined,
       recordedAt: recording.recorded_at ?? undefined,
       required: Boolean((row as any).is_required),
+      completed: completedRecordingIds.has(recording.id),
       ...player,
     });
   }

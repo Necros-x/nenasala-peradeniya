@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Clock3, ExternalLink, Film, ShieldCheck, Video } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock3, ExternalLink, Film, ShieldCheck, Video } from "lucide-react";
 import { Badge } from "@/features/student/components/ui/Badge";
 import { Card } from "@/features/student/components/ui/Card";
+import { Button } from "@/features/student/components/ui/Button";
 import type { CourseRecording } from "@/features/student/types";
+import { completeRecordingAction } from "@/lib/actions/student/progress";
 
 function durationLabel(seconds?: number) {
   if (!seconds) return "Duration not set";
@@ -14,6 +17,17 @@ function durationLabel(seconds?: number) {
 }
 
 export default function RecordingView({ recording }: { recording: CourseRecording | null }) {
+  const [completed, setCompleted] = useState(Boolean(recording?.completed));
+  const [saving, setSaving] = useState(false);
+
+  async function markComplete() {
+    if (!recording || completed) return;
+    setSaving(true);
+    const result = await completeRecordingAction(recording.id);
+    if (result.ok) setCompleted(true);
+    setSaving(false);
+  }
+
   if (!recording) {
     return (
       <div className="mx-auto max-w-3xl py-16 text-center">
@@ -102,6 +116,13 @@ export default function RecordingView({ recording }: { recording: CourseRecordin
           {recording.description && (
             <p className="mt-5 whitespace-pre-wrap leading-relaxed text-[var(--color-text-secondary)]">{recording.description}</p>
           )}
+
+          <div className="mt-6 border-t border-[var(--color-border)] pt-5">
+            <Button onClick={markComplete} disabled={completed || saving} variant={completed ? "secondary" : "default"}>
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              {completed ? "Recording completed" : saving ? "Saving..." : "Mark as watched"}
+            </Button>
+          </div>
         </div>
       </Card>
     </div>

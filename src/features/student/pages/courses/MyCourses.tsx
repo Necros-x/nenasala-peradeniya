@@ -15,6 +15,7 @@ export default function MyCourses({ initialCourses }: { initialCourses?: Course[
   const [courses, setCourses] = useState<Course[]>(initialCourses ?? []);
   const [loading, setLoading] = useState(initialCourses === undefined);
   const [filter, setFilter] = useState('All');
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     if (initialCourses !== undefined) {
@@ -29,6 +30,17 @@ export default function MyCourses({ initialCourses }: { initialCourses?: Course[
     });
   }, [initialCourses]);
 
+  const visibleCourses = courses.filter((course) => {
+    const progress = initialCourses === undefined && course.id === 'c_1' ? 35 : (course.progressPercent ?? 0);
+    const matchesFilter =
+      filter === 'All' ||
+      (filter === 'In Progress' && progress > 0 && progress < 100) ||
+      (filter === 'Not Started' && progress === 0) ||
+      (filter === 'Completed' && progress === 100);
+    const matchesQuery = course.title.toLowerCase().includes(query.trim().toLowerCase());
+    return matchesFilter && matchesQuery;
+  });
+
   return (
     <div className="space-y-6 pb-8">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -40,7 +52,7 @@ export default function MyCourses({ initialCourses }: { initialCourses?: Course[
         <div className="flex items-center gap-2">
           <div className="relative w-full md:w-64">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
-            <Input type="search" placeholder="Find a course..." className="pl-9 rounded-full bg-[var(--color-background)] border-[var(--color-border)]" />
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="Find a course..." className="pl-9 rounded-full bg-[var(--color-background)] border-[var(--color-border)]" />
           </div>
           <Button variant="outline" size="icon">
             <Filter className="w-4 h-4" />
@@ -66,16 +78,17 @@ export default function MyCourses({ initialCourses }: { initialCourses?: Course[
             <Card key={i} className="h-80 animate-pulse bg-[var(--color-surface-elevated)]" />
           ))}
         </div>
-      ) : courses.length === 0 ? (
+      ) : visibleCourses.length === 0 ? (
         <Card className="p-8 text-center">
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">No courses assigned yet</h2>
           <p className="mt-2 text-sm text-[var(--color-text-secondary)]">Your courses will appear here when your intake has active or scheduled classes.</p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map(course => {
+          {visibleCourses.map(course => {
             const isDemoCourse = initialCourses === undefined;
-            const progress = isDemoCourse && course.id === 'c_1' ? 35 : 0;
+            const progress = isDemoCourse && course.id === 'c_1' ? 35 : (course.progressPercent ?? 0);
+            const completedLessons = isDemoCourse && course.id === 'c_1' ? 3 : (course.completedLessons ?? 0);
             return (
               <Card key={course.id} className="overflow-hidden flex flex-col hover:border-[var(--color-primary)] transition-colors group">
                 <div className="relative h-48 shrink-0 overflow-hidden bg-[var(--color-surface-elevated)]">
@@ -102,7 +115,7 @@ export default function MyCourses({ initialCourses }: { initialCourses?: Course[
                     <div>
                       <div className="flex justify-between text-sm font-medium mb-1.5 text-[var(--color-text-secondary)]">
                         <span>{progress}% Complete</span>
-                        <span>{isDemoCourse && course.id === 'c_1' ? '3' : '0'}/{course.totalLessons}</span>
+                        <span>{completedLessons}/{course.totalLessons}</span>
                       </div>
                       <Progress value={progress} className="h-1.5" />
                     </div>

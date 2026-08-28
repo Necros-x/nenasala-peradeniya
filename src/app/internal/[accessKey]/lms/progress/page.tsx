@@ -1,10 +1,7 @@
-import { AdminPlaceholder } from "@/components/admin/AdminPlaceholder";
+import ProgressOverview from "@/features/admin/pages/lms/ProgressOverview";
+import { getAdminStudentProgress } from "@/lib/services/progress";
 
-export default function Page() {
-  return (
-    <AdminPlaceholder
-      title="Progress & Grades"
-      description="Review lesson progress, assignment grades, quiz scores and learner performance."
-    />
-  );
+export default async function Page() {
+  const rows = await getAdminStudentProgress();
+  return <ProgressOverview rows={rows} />;
 }

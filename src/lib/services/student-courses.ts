@@ -26,7 +26,7 @@ function toEmbedUrl(raw?: string) {
   if (!raw) return undefined;
   try {
     const url = new URL(raw);
-    if (!['http:', 'https:'].includes(url.protocol)) return undefined;
+    if (!["http:", "https:"].includes(url.protocol)) return undefined;
 
     if (url.hostname === "youtu.be") {
       const id = url.pathname.split("/").filter(Boolean)[0];
@@ -48,7 +48,7 @@ function toEmbedUrl(raw?: string) {
   }
 }
 
-function mapLesson(row: any): Lesson {
+function mapLesson(row: any, completedLessonIds: Set<string>): Lesson {
   const type = row.lesson_type as Lesson["type"];
   const content = row.content;
   const lesson: Lesson = {
@@ -57,7 +57,7 @@ function mapLesson(row: any): Lesson {
     type,
     description: row.description ?? undefined,
     duration: row.duration_minutes ?? undefined,
-    completed: false,
+    completed: completedLessonIds.has(row.id),
   };
 
   if (type === "text") lesson.content = contentString(content, "body") ?? "";
@@ -109,34 +109,29 @@ export async function getCurrentStudentCourses(): Promise<Course[]> {
       modules: [],
       category: course.category ?? "General",
       totalLessons: 0,
+      completedLessons: 0,
+      progressPercent: 0,
     });
   }
 
-  return [...byCourse.values()];
-}
-
-export async function getCurrentStudentCourseById(courseId: string): Promise<Course | null> {
-  const courses = await getCurrentStudentCourses();
-  const baseCourse = courses.find((course) => course.id === courseId) ?? null;
-  if (!baseCourse) return null;
-
-  const supabase = await createClient();
-  if (!supabase) return baseCourse;
+  const courses = [...byCourse.values()];
+  const courseIds = courses.map((course) => course.id);
+  if (courseIds.length === 0) return courses;
 
   const { data: moduleRows, error: moduleError } = await supabase
     .from("modules")
     .select(MODULE_COLUMNS)
-    .eq("course_id", courseId)
+    .in("course_id", courseIds)
     .eq("status", "published")
     .order("position");
 
   if (moduleError) {
     console.error("Unable to load student modules:", moduleError.message);
-    return baseCourse;
+    return courses;
   }
 
   const moduleIds = (moduleRows ?? []).map((module) => module.id);
-  if (moduleIds.length === 0) return baseCourse;
+  if (moduleIds.length === 0) return courses;
 
   const { data: lessonRows, error: lessonError } = await supabase
     .from("lessons")
@@ -147,27 +142,67 @@ export async function getCurrentStudentCourseById(courseId: string): Promise<Cou
 
   if (lessonError) {
     console.error("Unable to load student lessons:", lessonError.message);
-    return baseCourse;
+    return courses;
+  }
+
+  const lessonIds = (lessonRows ?? []).map((lesson) => lesson.id);
+  const completedLessonIds = new Set<string>();
+
+  if (lessonIds.length > 0) {
+    const { data: progressRows, error: progressError } = await supabase
+      .from("lesson_progress")
+      .select("lesson_id,completed_at")
+      .eq("student_id", userData.user.id)
+      .in("lesson_id", lessonIds);
+
+    if (progressError) {
+      console.error("Unable to load lesson progress:", progressError.message);
+    } else {
+      for (const row of progressRows ?? []) {
+        if (row.completed_at) completedLessonIds.add(row.lesson_id);
+      }
+    }
   }
 
   const lessonsByModule = new Map<string, Lesson[]>();
   for (const row of lessonRows ?? []) {
     const bucket = lessonsByModule.get(row.module_id) ?? [];
-    bucket.push(mapLesson(row));
+    bucket.push(mapLesson(row, completedLessonIds));
     lessonsByModule.set(row.module_id, bucket);
   }
 
-  const modules: Module[] = (moduleRows ?? []).map((module) => ({
-    id: module.id,
-    title: module.title,
-    lessons: lessonsByModule.get(module.id) ?? [],
-  }));
+  const modulesByCourse = new Map<string, Module[]>();
+  for (const module of moduleRows ?? []) {
+    const bucket = modulesByCourse.get(module.course_id) ?? [];
+    bucket.push({
+      id: module.id,
+      title: module.title,
+      lessons: lessonsByModule.get(module.id) ?? [],
+    });
+    modulesByCourse.set(module.course_id, bucket);
+  }
 
-  return {
-    ...baseCourse,
-    modules,
-    totalLessons: modules.reduce((total, module) => total + module.lessons.length, 0),
-  };
+  return courses.map((course) => {
+    const modules = modulesByCourse.get(course.id) ?? [];
+    const lessons = modules.flatMap((module) => module.lessons);
+    const completedLessons = lessons.filter((lesson) => lesson.completed).length;
+    const progressPercent = lessons.length > 0 ? Math.round((completedLessons / lessons.length) * 100) : 0;
+    const continueLessonId = lessons.find((lesson) => !lesson.completed)?.id ?? lessons.at(-1)?.id;
+
+    return {
+      ...course,
+      modules,
+      totalLessons: lessons.length,
+      completedLessons,
+      progressPercent,
+      continueLessonId,
+    };
+  });
+}
+
+export async function getCurrentStudentCourseById(courseId: string): Promise<Course | null> {
+  const courses = await getCurrentStudentCourses();
+  return courses.find((course) => course.id === courseId) ?? null;
 }
 
 export async function getCurrentStudentLesson(courseId: string, lessonId: string): Promise<{ course: Course; lesson: Lesson } | null> {
@@ -181,8 +216,6 @@ export async function getCurrentStudentLesson(courseId: string, lessonId: string
   const supabase = await createClient();
   if (!supabase) return { course, lesson };
 
-  // Fetch the private storage path only after the authenticated student's course
-  // access has already been verified above through RLS.
   const { data: lessonRow, error } = await supabase
     .from("lessons")
     .select("content")
