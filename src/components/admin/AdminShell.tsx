@@ -57,6 +57,7 @@ const navGroups = [
     items: [
       { label: "Programmes & Courses", path: "/courses", icon: BookOpen },
       { label: "Intakes", path: "/intakes", icon: GraduationCap },
+      { label: "Certificates", path: "/certificates", icon: Award },
     ],
   },
   {

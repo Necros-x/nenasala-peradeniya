@@ -25,6 +25,7 @@ export function Navbar() {
     { href: "/courses", label: "Courses" },
     { href: "/intakes", label: "Intakes" },
     { href: "/instructors", label: "Instructors" },
+    { href: "/verify", label: "Verify" },
     { href: "/about", label: "About" },
   ];
 
