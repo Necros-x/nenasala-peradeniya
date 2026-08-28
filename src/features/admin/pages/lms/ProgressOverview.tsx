@@ -1,4 +1,4 @@
-import { BookOpenCheck, Film, TrendingUp, UsersRound } from "lucide-react";
+import { BookOpenCheck, ClipboardCheck, FileQuestion, Film, TrendingUp, UsersRound } from "lucide-react";
 import { Card, CardContent } from "@/features/admin/components/ui/card";
 import type { AdminStudentProgressRecord } from "@/lib/services/progress";
 
@@ -14,15 +14,29 @@ function formatActivity(value: string | null) {
   }).format(new Date(value));
 }
 
+function averageLabel(value: number | null) {
+  return value == null ? "—" : `${value}%`;
+}
+
 export default function ProgressOverview({ rows }: { rows: AdminStudentProgressRecord[] }) {
-  const studentsStarted = rows.filter((row) => row.lessons_completed > 0 || row.recordings_completed > 0 || row.last_activity_at).length;
+  const studentsStarted = rows.filter((row) =>
+    row.lessons_completed > 0 ||
+    row.recordings_completed > 0 ||
+    row.assignments_submitted > 0 ||
+    row.quiz_attempts > 0 ||
+    row.last_activity_at
+  ).length;
   const lessonsCompleted = rows.reduce((total, row) => total + row.lessons_completed, 0);
   const recordingsCompleted = rows.reduce((total, row) => total + row.recordings_completed, 0);
+  const assignmentsGraded = rows.reduce((total, row) => total + row.assignments_graded, 0);
+  const quizzesPassed = rows.reduce((total, row) => total + row.quizzes_passed, 0);
 
   const stats = [
-    { label: "Students started", value: studentsStarted, icon: UsersRound },
+    { label: "Students active", value: studentsStarted, icon: UsersRound },
     { label: "Lessons completed", value: lessonsCompleted, icon: BookOpenCheck },
-    { label: "Recordings completed", value: recordingsCompleted, icon: Film },
+    { label: "Recordings watched", value: recordingsCompleted, icon: Film },
+    { label: "Assignments graded", value: assignmentsGraded, icon: ClipboardCheck },
+    { label: "Quiz passes", value: quizzesPassed, icon: FileQuestion },
   ];
 
   return (
@@ -30,14 +44,14 @@ export default function ProgressOverview({ rows }: { rows: AdminStudentProgressR
       <div>
         <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-brand-primary">LMS Management</p>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Learning Progress</h1>
-        <p className="mt-1 text-text-secondary">Track completed lessons, watched recordings and each student&apos;s latest learning activity.</p>
+        <p className="mt-1 text-text-secondary">Track lessons, recordings, assignments, quiz results and each student&apos;s latest LMS activity.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {stats.map((stat) => (
           <Card key={stat.label}>
-            <CardContent className="flex items-center gap-4 p-5">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius-sm)] bg-[var(--color-primary-soft)] text-brand-primary">
+            <CardContent className="flex items-center gap-4 p-5 xl:block">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius-sm)] bg-[var(--color-primary-soft)] text-brand-primary xl:mb-3">
                 <stat.icon className="h-5 w-5" />
               </div>
               <div>
@@ -54,7 +68,7 @@ export default function ProgressOverview({ rows }: { rows: AdminStudentProgressR
           <TrendingUp className="h-5 w-5 text-brand-primary" />
           <div>
             <h2 className="font-semibold text-foreground">Student activity</h2>
-            <p className="text-sm text-text-secondary">Progress recorded from real LMS lesson and recording completion.</p>
+            <p className="text-sm text-text-secondary">Real learning and assessment activity across the LMS.</p>
           </div>
         </div>
 
@@ -65,13 +79,16 @@ export default function ProgressOverview({ rows }: { rows: AdminStudentProgressR
           </CardContent>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
+            <table className="w-full min-w-[1120px] text-left text-sm">
               <thead className="bg-surface-muted text-xs uppercase tracking-wide text-text-muted">
                 <tr>
                   <th className="px-5 py-3 font-semibold">Student</th>
                   <th className="px-5 py-3 font-semibold">Programme / Intake</th>
                   <th className="px-5 py-3 text-center font-semibold">Lessons</th>
                   <th className="px-5 py-3 text-center font-semibold">Recordings</th>
+                  <th className="px-5 py-3 text-center font-semibold">Assignments</th>
+                  <th className="px-5 py-3 text-center font-semibold">Quizzes</th>
+                  <th className="px-5 py-3 text-center font-semibold">Assessment avg.</th>
                   <th className="px-5 py-3 font-semibold">Last activity</th>
                 </tr>
               </thead>
@@ -88,6 +105,18 @@ export default function ProgressOverview({ rows }: { rows: AdminStudentProgressR
                     </td>
                     <td className="px-5 py-4 text-center font-semibold text-foreground">{row.lessons_completed}</td>
                     <td className="px-5 py-4 text-center font-semibold text-foreground">{row.recordings_completed}</td>
+                    <td className="px-5 py-4 text-center">
+                      <p className="font-semibold text-foreground">{row.assignments_graded}/{row.assignments_submitted}</p>
+                      <p className="text-[11px] text-text-muted">graded / submitted</p>
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      <p className="font-semibold text-foreground">{row.quizzes_passed}/{row.quiz_attempts}</p>
+                      <p className="text-[11px] text-text-muted">passed / attempts</p>
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      <p className="font-semibold text-foreground">A {averageLabel(row.assignment_average)}</p>
+                      <p className="mt-0.5 text-xs text-text-muted">Q {averageLabel(row.quiz_average)}</p>
+                    </td>
                     <td className="px-5 py-4 text-text-secondary">{formatActivity(row.last_activity_at)}</td>
                   </tr>
                 ))}

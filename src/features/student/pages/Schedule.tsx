@@ -9,10 +9,13 @@ import {
   ChevronRight,
   ClipboardList,
   Clock,
+  FileQuestion,
   Loader2,
+  PlayCircle,
   Radio,
   RotateCcw,
   Video,
+  XCircle,
 } from "lucide-react";
 import { Card } from "@/features/student/components/ui/Card";
 import { Badge } from "@/features/student/components/ui/Badge";
@@ -42,6 +45,14 @@ export default function Schedule({ initialEvents }: { initialEvents?: CalendarEv
       return <Radio className="h-5 w-5 text-[var(--color-error)]" />;
     }
     if (event.type === "live_session") return <Video className="h-5 w-5 text-[var(--color-primary)]" />;
+    if (event.type === "quiz") {
+      if (event.quizState === "passed") return <CheckCircle2 className="h-5 w-5 text-[var(--color-success)]" />;
+      if (event.quizState === "failed" || event.quizState === "overdue") return <XCircle className="h-5 w-5 text-[var(--color-error)]" />;
+      if (event.quizState === "retry") return <RotateCcw className="h-5 w-5 text-[var(--color-primary)]" />;
+      if (event.quizState === "in_progress") return <PlayCircle className="h-5 w-5 text-[var(--color-primary)]" />;
+      if (event.quizState === "due_soon") return <Clock className="h-5 w-5 text-[var(--color-warning)]" />;
+      return <FileQuestion className="h-5 w-5 text-[var(--color-primary)]" />;
+    }
     if (event.type === "deadline") {
       if (event.assignmentState === "overdue") return <AlertTriangle className="h-5 w-5 text-[var(--color-error)]" />;
       if (event.assignmentState === "submitted" || event.assignmentState === "graded") {
@@ -59,6 +70,15 @@ export default function Schedule({ initialEvents }: { initialEvents?: CalendarEv
       return <Badge variant="error">Live now</Badge>;
     }
     if (event.type === "live_session") return <Badge variant="default">Live Session</Badge>;
+    if (event.type === "quiz") {
+      if (event.quizState === "passed") return <Badge variant="success">Passed</Badge>;
+      if (event.quizState === "failed") return <Badge variant="error">Failed</Badge>;
+      if (event.quizState === "retry") return <Badge variant="default">Retry available</Badge>;
+      if (event.quizState === "in_progress") return <Badge variant="default">Quiz in progress</Badge>;
+      if (event.quizState === "overdue") return <Badge variant="error">Quiz overdue</Badge>;
+      if (event.quizState === "due_soon") return <Badge variant="warning">Quiz due soon</Badge>;
+      return <Badge variant="secondary">Quiz due</Badge>;
+    }
     if (event.type === "deadline") {
       if (event.assignmentState === "graded") return <Badge variant="success">Graded</Badge>;
       if (event.assignmentState === "submitted") return <Badge variant="success">Submitted</Badge>;
@@ -75,6 +95,12 @@ export default function Schedule({ initialEvents }: { initialEvents?: CalendarEv
       return event.status === "live"
         ? "border-[var(--color-error)]/20 bg-[var(--color-error-soft)]"
         : "border-[var(--color-primary-muted)] bg-[var(--color-primary-soft)]";
+    }
+    if (event.type === "quiz") {
+      if (event.quizState === "passed") return "border-[var(--color-success)]/20 bg-[var(--color-success-soft)]";
+      if (event.quizState === "failed" || event.quizState === "overdue") return "border-[var(--color-error)]/20 bg-[var(--color-error-soft)]";
+      if (event.quizState === "due_soon") return "border-[var(--color-warning)]/20 bg-[var(--color-warning-soft)]";
+      return "border-[var(--color-primary-muted)] bg-[var(--color-primary-soft)]";
     }
     if (event.assignmentState === "overdue") return "border-[var(--color-error)]/20 bg-[var(--color-error-soft)]";
     if (event.assignmentState === "submitted" || event.assignmentState === "graded") {
@@ -105,7 +131,7 @@ export default function Schedule({ initialEvents }: { initialEvents?: CalendarEv
     <div className="mx-auto max-w-4xl space-y-8 pb-12">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)]">Event Schedule</h1>
-        <p className="mt-1 text-[var(--color-text-secondary)]">Your live classes, assignment deadlines, submissions and recent overdue work.</p>
+        <p className="mt-1 text-[var(--color-text-secondary)]">Your live classes, assignment deadlines, quiz deadlines and assessment results.</p>
       </div>
 
       <div className="space-y-4">
@@ -116,7 +142,7 @@ export default function Schedule({ initialEvents }: { initialEvents?: CalendarEv
                 <CalendarIcon className="h-8 w-8 text-[var(--color-secondary)]" />
               </div>
               <h3 className="mb-1 text-lg font-bold text-[var(--color-text-primary)]">Your schedule is clear!</h3>
-              <p className="text-[var(--color-text-secondary)]">No live classes or assignment deadlines to show at the moment.</p>
+              <p className="text-[var(--color-text-secondary)]">No live classes, assignment deadlines or quiz deadlines to show at the moment.</p>
             </div>
           </Card>
         ) : (
@@ -147,6 +173,7 @@ export default function Schedule({ initialEvents }: { initialEvents?: CalendarEv
                       <div className="mb-1 flex flex-wrap items-center gap-2">
                         {getEventBadge(event)}
                         {event.provider && <span className="text-xs font-semibold text-[var(--color-text-muted)]">{event.provider}</span>}
+                        {event.resultLabel && <span className="text-xs font-bold text-[var(--color-text-primary)]">{event.resultLabel}</span>}
                         <span className="text-xs font-semibold text-[var(--color-text-muted)]">{event.time}</span>
                       </div>
                       <h3 className="line-clamp-1 text-lg font-bold text-[var(--color-text-primary)] transition-colors group-hover:text-[var(--color-primary)]">

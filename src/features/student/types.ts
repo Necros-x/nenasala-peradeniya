@@ -15,7 +15,7 @@ export type Student = {
 export type CalendarEvent = {
   id: string;
   title: string;
-  type: 'live_session' | 'deadline' | 'assignment';
+  type: 'live_session' | 'deadline' | 'assignment' | 'quiz';
   date: string; // ISO string
   time?: string; // e.g., "10:00 AM - 11:30 AM"
   courseTitle: string;
@@ -24,6 +24,8 @@ export type CalendarEvent = {
   provider?: string;
   status?: 'scheduled' | 'live';
   assignmentState?: 'due' | 'due_soon' | 'overdue' | 'submitted' | 'graded' | 'resubmission';
+  quizState?: 'due' | 'due_soon' | 'overdue' | 'in_progress' | 'passed' | 'failed' | 'retry';
+  resultLabel?: string;
 };
 
 export type RecordingPlayerType = 'embed' | 'video' | 'external';

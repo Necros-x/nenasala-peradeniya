@@ -1,149 +1,228 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Bell, BookOpen, ClipboardList, Info, Settings, CheckCircle2 } from 'lucide-react';
-import { Button } from './Button';
-import { getNotifications, markNotificationRead, markAllNotificationsRead } from '@/features/student/lib/services';
-import { Notification } from '@/features/student/types';
-import { cn } from '@/features/student/lib/utils';
+import React, { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Bell, BookOpen, CheckCircle2, ClipboardList, FileQuestion, Info, Settings } from "lucide-react";
+import { Button } from "./Button";
+import { getNotifications, markAllNotificationsRead, markNotificationRead } from "@/features/student/lib/services";
+import type { Notification } from "@/features/student/types";
+import { cn } from "@/features/student/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+
+function safeStudentPath(value: string | undefined) {
+  return value?.startsWith("/student/") ? value : "/student/notifications";
+}
+
+function demoStudentPath(value: string | undefined) {
+  if (!value) return "/student/notifications";
+  if (value.startsWith("/student/")) return value;
+  if (value.startsWith("/")) return `/student${value}`;
+  return "/student/notifications";
+}
+
+function mapRealNotification(row: any): Notification {
+  return {
+    id: row.id,
+    title: row.title,
+    message: row.message,
+    timestamp: row.created_at,
+    read: Boolean(row.read_at),
+    type: row.type as Notification["type"],
+    link: row.link ?? undefined,
+  };
+}
 
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [realUserId, setRealUserId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
+  const router = useRouter();
 
-  const fetchNotifications = () => {
-    getNotifications().then(setNotifications);
+  const fetchNotifications = async () => {
+    try {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id ?? null;
+      if (userId) {
+        setRealUserId(userId);
+        const { data, error } = await supabase
+          .from("notifications")
+          .select("id,title,message,type,link,read_at,created_at")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(8);
+        if (!error) {
+          setNotifications((data ?? []).map(mapRealNotification));
+          return;
+        }
+      }
+    } catch {
+      // Demo/local preview falls back to the existing mock notification service.
+    }
+
+    setRealUserId(null);
+    setNotifications(await getNotifications());
   };
 
   useEffect(() => {
-    fetchNotifications();
+    void fetchNotifications();
+
+    const handleFocus = () => void fetchNotifications();
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setIsOpen(false);
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((item) => !item.read).length;
 
-  const handleMarkAllRead = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleMarkAllRead = async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (realUserId) {
+      try {
+        const supabase = createClient();
+        const { error } = await supabase
+          .from("notifications")
+          .update({ read_at: new Date().toISOString() })
+          .eq("user_id", realUserId)
+          .is("read_at", null);
+        if (!error) {
+          setNotifications((current) => current.map((item) => ({ ...item, read: true })));
+          return;
+        }
+      } catch {
+        // Fall through to a fresh read below.
+      }
+      await fetchNotifications();
+      return;
+    }
+
     await markAllNotificationsRead();
-    fetchNotifications();
+    await fetchNotifications();
   };
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read) {
-      await markNotificationRead(notification.id);
-      fetchNotifications();
+      if (realUserId) {
+        try {
+          const supabase = createClient();
+          await supabase
+            .from("notifications")
+            .update({ read_at: new Date().toISOString() })
+            .eq("id", notification.id)
+            .eq("user_id", realUserId);
+        } catch {
+          // Navigation should still work even if marking read fails.
+        }
+      } else {
+        await markNotificationRead(notification.id);
+      }
     }
+
     setIsOpen(false);
-    if (notification.link) {
-      navigate(notification.link);
-    } else {
-      navigate('/notifications');
-    }
+    router.push(realUserId ? safeStudentPath(notification.link) : demoStudentPath(notification.link));
   };
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'course': return <BookOpen className="w-4 h-4 text-[var(--color-primary)]" />;
-      case 'assignment': return <ClipboardList className="w-4 h-4 text-[var(--color-primary)]" />;
-      case 'system': return <Settings className="w-4 h-4 text-[var(--color-text-muted)]" />;
-      case 'announcement': return <Info className="w-4 h-4 text-[var(--color-info)]" />;
-      default: return <Bell className="w-4 h-4 text-[var(--color-text-muted)]" />;
-    }
+  const getIcon = (type: Notification["type"]) => {
+    if (type === "course") return <BookOpen className="h-4 w-4 text-[var(--color-primary)]" />;
+    if (type === "assignment") return <ClipboardList className="h-4 w-4 text-[var(--color-primary)]" />;
+    if (type === "quiz") return <FileQuestion className="h-4 w-4 text-[var(--color-primary)]" />;
+    if (type === "announcement") return <Info className="h-4 w-4 text-[var(--color-info)]" />;
+    if (type === "system") return <Settings className="h-4 w-4 text-[var(--color-text-muted)]" />;
+    return <Bell className="h-4 w-4 text-[var(--color-text-muted)]" />;
+  };
+
+  const toggleOpen = () => {
+    const next = !isOpen;
+    setIsOpen(next);
+    if (next) void fetchNotifications();
   };
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <Button 
-        variant="ghost" 
-        size="icon" 
+      <Button
+        variant="ghost"
+        size="icon"
         className="relative text-[var(--color-text-secondary)]"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleOpen}
+        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--color-error)] border border-[var(--color-surface)]"></span>
+          <span className="absolute right-0.5 top-0.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[var(--color-error)] px-1 text-[9px] font-bold leading-none text-white ring-2 ring-[var(--color-surface)]">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
         )}
       </Button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)] shadow-lg overflow-hidden z-50 flex flex-col max-h-[28rem]">
-          <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-surface-elevated)]">
-            <h3 className="font-bold text-[var(--color-text-primary)]">Notifications</h3>
+        <div className="absolute right-0 z-50 mt-2 flex max-h-[30rem] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
+          <div className="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-4">
+            <div>
+              <h3 className="font-bold text-[var(--color-text-primary)]">Notifications</h3>
+              <p className="text-[11px] text-[var(--color-text-muted)]">{unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}</p>
+            </div>
             {unreadCount > 0 && (
-              <button 
-                onClick={handleMarkAllRead}
-                className="text-xs font-medium text-[var(--color-primary)] hover:underline flex items-center gap-1"
-              >
-                <CheckCircle2 className="w-3 h-3" />
-                Mark all read
+              <button onClick={handleMarkAllRead} className="flex items-center gap-1 text-xs font-medium text-[var(--color-primary)] hover:underline">
+                <CheckCircle2 className="h-3 w-3" /> Mark all read
               </button>
             )}
           </div>
-          
-          <div className="overflow-y-auto flex-1">
+
+          <div className="flex-1 overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="p-8 text-center text-[var(--color-text-muted)] text-sm">
-                No notifications right now.
-              </div>
+              <div className="p-8 text-center text-sm text-[var(--color-text-muted)]">No notifications right now.</div>
             ) : (
               <div className="divide-y divide-[var(--color-border)]">
-                {notifications.slice(0, 5).map(notification => (
+                {notifications.slice(0, 8).map((notification) => (
                   <button
                     key={notification.id}
-                    onClick={() => handleNotificationClick(notification)}
+                    type="button"
+                    onClick={() => void handleNotificationClick(notification)}
                     className={cn(
-                      "w-full text-left p-4 flex gap-3 hover:bg-[var(--color-surface-elevated)] transition-colors",
-                      !notification.read ? "bg-[var(--color-primary)]/5" : ""
+                      "flex w-full gap-3 p-4 text-left transition-colors hover:bg-[var(--color-surface-elevated)]",
+                      !notification.read && "bg-[var(--color-primary)]/5"
                     )}
                   >
-                    <div className={cn(
-                      "w-8 h-8 rounded-full flex flex-col items-center justify-center shrink-0 border",
-                      !notification.read ? "bg-[var(--color-surface)] border-[var(--color-border)] shadow-sm" : "bg-[var(--color-surface-elevated)] border-transparent"
+                    <span className={cn(
+                      "grid h-8 w-8 shrink-0 place-items-center rounded-full border",
+                      !notification.read
+                        ? "border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm"
+                        : "border-transparent bg-[var(--color-surface-elevated)]"
                     )}>
                       {getIcon(notification.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={cn(
-                        "text-sm font-medium line-clamp-1 mb-0.5",
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className={cn(
+                        "mb-0.5 block line-clamp-1 text-sm font-medium",
                         !notification.read ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-secondary)]"
-                      )}>
-                        {notification.title}
-                      </p>
-                      <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2">
-                        {notification.message}
-                      </p>
-                      <p className="text-[10px] text-[var(--color-text-muted)] mt-1.5 font-medium">
-                        {new Date(notification.timestamp).toLocaleDateString()}
-                      </p>
-                    </div>
-                    {!notification.read && (
-                      <div className="w-2 h-2 rounded-full bg-[var(--color-primary)] shrink-0 mt-1.5" />
-                    )}
+                      )}>{notification.title}</span>
+                      <span className="block line-clamp-2 text-xs text-[var(--color-text-secondary)]">{notification.message}</span>
+                      <span className="mt-1.5 block text-[10px] font-medium text-[var(--color-text-muted)]">
+                        {new Intl.DateTimeFormat("en-LK", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(new Date(notification.timestamp))}
+                      </span>
+                    </span>
+                    {!notification.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--color-primary)]" />}
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="p-2 border-t border-[var(--color-border)] bg-[var(--color-surface-elevated)]">
-            <Button 
-              variant="ghost" 
+          <div className="border-t border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-2">
+            <Button
+              variant="ghost"
               className="w-full text-sm text-[var(--color-primary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-primary-hover)]"
               onClick={() => {
                 setIsOpen(false);
-                navigate('/notifications');
+                router.push("/student/notifications");
               }}
             >
               View All Notifications

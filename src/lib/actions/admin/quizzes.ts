@@ -206,85 +206,106 @@ export async function saveQuizAction(formData: FormData): Promise<QuizActionStat
   return { ok: true };
 }
 
+type NormalizedQuizQuestion = {
+  question_type: "multiple_choice" | "true_false";
+  prompt: string;
+  options: string[];
+  correct_answers: string[];
+  points: number;
+};
+
+function uniqueStrings(values: unknown): string[] {
+  if (!Array.isArray(values)) return [];
+  return [...new Set(values
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean))];
+}
+
+function normalizeQuizQuestion(input: unknown): { question?: NormalizedQuizQuestion; error?: string } {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return { error: "Invalid question data." };
+  const row = input as Record<string, unknown>;
+  const questionType = typeof row.question_type === "string" ? row.question_type : "";
+  const prompt = typeof row.prompt === "string" ? row.prompt.trim() : "";
+  const points = Number(row.points ?? 1);
+
+  if (!prompt) return { error: "Every question needs question text." };
+  if (!Number.isFinite(points) || points <= 0) return { error: "Question points must be greater than zero." };
+  if (!["multiple_choice", "true_false"].includes(questionType)) return { error: "Invalid question type." };
+
+  if (questionType === "true_false") {
+    const answers = uniqueStrings(row.correct_answers).map((item) => item.toLowerCase());
+    const answer = answers[0] ?? "";
+    if (!["true", "false"].includes(answer)) return { error: "Choose True or False as the correct answer." };
+    return { question: { question_type: "true_false", prompt, options: ["True", "False"], correct_answers: [answer], points } };
+  }
+
+  const options = uniqueStrings(row.options);
+  if (options.length < 2) return { error: "Multiple-choice questions need at least two unique options." };
+  const correctAnswers = uniqueStrings(row.correct_answers);
+  if (correctAnswers.length === 0) return { error: "Mark at least one option as correct." };
+  if (correctAnswers.some((answer) => !options.includes(answer))) return { error: "Every correct answer must match one of the question options." };
+  return { question: { question_type: "multiple_choice", prompt, options, correct_answers: correctAnswers, points } };
+}
+
+function parseJsonField(formData: FormData, key: string): unknown {
+  const raw = text(formData, key);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
 export async function saveQuizQuestionAction(formData: FormData): Promise<QuizActionState> {
   const ctx = await adminContext(formData);
   if ("error" in ctx) return { ok: false, error: ctx.error };
   const { accessKey, admin, supabase } = ctx;
-
   const id = text(formData, "id");
   const quizId = text(formData, "quiz_id");
-  const questionType = text(formData, "question_type");
-  const prompt = text(formData, "prompt");
-  const correctRaw = text(formData, "correct_answer");
-  const points = Number(text(formData, "points") || "1");
-
-  if (!quizId || !prompt) return { ok: false, error: "Quiz and question are required." };
-  if (!Number.isFinite(points) || points <= 0) return { ok: false, error: "Question points must be greater than zero." };
-  if (!["multiple_choice", "true_false"].includes(questionType)) return { ok: false, error: "Invalid question type." };
+  if (!quizId) return { ok: false, error: "Quiz is required." };
   if (await quizHasAttempts(quizId)) return { ok: false, error: "Questions are locked after the first student attempt." };
-
-  let options: string[] = [];
-  let correctAnswer = correctRaw;
-  if (questionType === "multiple_choice") {
-    options = text(formData, "options")
-      .split(/\r?\n/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-    options = [...new Set(options)];
-    if (options.length < 2) return { ok: false, error: "Multiple-choice questions need at least two unique options." };
-    if (!options.includes(correctAnswer)) return { ok: false, error: "Correct answer must exactly match one of the options." };
-  } else {
-    correctAnswer = correctRaw.toLowerCase();
-    if (!["true", "false"].includes(correctAnswer)) return { ok: false, error: "Choose True or False as the correct answer." };
-    options = ["True", "False"];
-  }
+  const normalized = normalizeQuizQuestion(parseJsonField(formData, "question_json"));
+  if (!normalized.question) return { ok: false, error: normalized.error ?? "Invalid question." };
+  const question = normalized.question;
 
   let position = 0;
   if (id) {
-    const { data: existing, error: existingError } = await supabase
-      .from("quiz_questions")
-      .select("id,quiz_id,position")
-      .eq("id", id)
-      .maybeSingle();
+    const { data: existing, error: existingError } = await supabase.from("quiz_questions").select("id,quiz_id,position").eq("id", id).maybeSingle();
     if (existingError || !existing || existing.quiz_id !== quizId) return { ok: false, error: "Question could not be found." };
     position = existing.position;
   } else {
-    const { data: latest } = await supabase
-      .from("quiz_questions")
-      .select("position")
-      .eq("quiz_id", quizId)
-      .order("position", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const { data: latest } = await supabase.from("quiz_questions").select("position").eq("quiz_id", quizId).order("position", { ascending: false }).limit(1).maybeSingle();
     position = Number(latest?.position ?? -1) + 1;
   }
 
-  const payload = {
-    quiz_id: quizId,
-    position,
-    question_type: questionType,
-    prompt,
-    options,
-    correct_answer: correctAnswer,
-    points,
-  };
-
-  const query = id
-    ? supabase.from("quiz_questions").update(payload).eq("id", id).select("id").single()
-    : supabase.from("quiz_questions").insert(payload).select("id").single();
+  const payload = { quiz_id: quizId, position, question_type: question.question_type, prompt: question.prompt, options: question.options, correct_answer: question.correct_answers[0], correct_answers: question.correct_answers, points: question.points };
+  const query = id ? supabase.from("quiz_questions").update(payload).eq("id", id).select("id").single() : supabase.from("quiz_questions").insert(payload).select("id").single();
   const { data, error } = await query;
-  if (error) {
-    console.error("Unable to save quiz question:", error);
-    return { ok: false, error: "Unable to save the question." };
-  }
+  if (error) { console.error("Unable to save quiz question:", error); return { ok: false, error: "Unable to save the question." }; }
+  await supabase.from("audit_logs").insert({ actor_id: admin.id, action: id ? "quiz_question.updated" : "quiz_question.created", entity_type: "quiz_question", entity_id: data.id, metadata: { quiz_id: quizId, question_type: question.question_type, points: question.points, correct_answer_count: question.correct_answers.length } });
+  revalidateQuizPaths(accessKey, quizId);
+  return { ok: true };
+}
 
-  await supabase.from("audit_logs").insert({
-    actor_id: admin.id,
-    action: id ? "quiz_question.updated" : "quiz_question.created",
-    entity_type: "quiz_question",
-    entity_id: data.id,
-    metadata: { quiz_id: quizId, question_type: questionType, points },
-  });
+export async function addQuizQuestionsBatchAction(formData: FormData): Promise<QuizActionState> {
+  const ctx = await adminContext(formData);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+  const { accessKey, admin, supabase } = ctx;
+  const quizId = text(formData, "quiz_id");
+  if (!quizId) return { ok: false, error: "Quiz is required." };
+  if (await quizHasAttempts(quizId)) return { ok: false, error: "Questions are locked after the first student attempt." };
+  const rawQuestions = parseJsonField(formData, "questions_json");
+  if (!Array.isArray(rawQuestions) || rawQuestions.length === 0) return { ok: false, error: "Add at least one question." };
+  const normalizedQuestions: NormalizedQuizQuestion[] = [];
+  for (let index = 0; index < rawQuestions.length; index += 1) {
+    const normalized = normalizeQuizQuestion(rawQuestions[index]);
+    if (!normalized.question) return { ok: false, error: `Q${index + 1}: ${normalized.error ?? "Invalid question."}` };
+    normalizedQuestions.push(normalized.question);
+  }
+  const { data: latest } = await supabase.from("quiz_questions").select("position").eq("quiz_id", quizId).order("position", { ascending: false }).limit(1).maybeSingle();
+  const startPosition = Number(latest?.position ?? -1) + 1;
+  const rows = normalizedQuestions.map((question, index) => ({ quiz_id: quizId, position: startPosition + index, question_type: question.question_type, prompt: question.prompt, options: question.options, correct_answer: question.correct_answers[0], correct_answers: question.correct_answers, points: question.points }));
+  const { data, error } = await supabase.from("quiz_questions").insert(rows).select("id");
+  if (error) { console.error("Unable to add quiz questions:", error); return { ok: false, error: "Unable to save the new questions." }; }
+  await supabase.from("audit_logs").insert({ actor_id: admin.id, action: "quiz_questions.batch_created", entity_type: "quiz", entity_id: quizId, metadata: { question_count: data?.length ?? rows.length } });
   revalidateQuizPaths(accessKey, quizId);
   return { ok: true };
 }

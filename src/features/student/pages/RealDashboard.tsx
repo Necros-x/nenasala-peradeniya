@@ -1,12 +1,14 @@
 import Link from "next/link";
 import {
   AlertTriangle,
+  Award,
   BookOpen,
   CalendarDays,
   CheckCircle2,
   ChevronRight,
   ClipboardList,
   Film,
+  FileQuestion,
   PlayCircle,
   Radio,
   RotateCcw,
@@ -55,6 +57,12 @@ function formatEventDate(value: string) {
 
 function upcomingEventIcon(event: StudentDashboardData["upcomingEvents"][number]) {
   if (event.status === "live") return <Radio className="h-5 w-5" />;
+  if (event.type === "quiz") {
+    if (event.quizState === "overdue") return <AlertTriangle className="h-5 w-5" />;
+    if (event.quizState === "retry") return <RotateCcw className="h-5 w-5" />;
+    if (event.quizState === "in_progress") return <PlayCircle className="h-5 w-5" />;
+    return <FileQuestion className="h-5 w-5" />;
+  }
   if (event.type !== "deadline") return <CalendarDays className="h-5 w-5" />;
   if (event.assignmentState === "overdue") return <AlertTriangle className="h-5 w-5" />;
   if (event.assignmentState === "resubmission") return <RotateCcw className="h-5 w-5" />;
@@ -63,6 +71,13 @@ function upcomingEventIcon(event: StudentDashboardData["upcomingEvents"][number]
 
 function upcomingEventBadge(event: StudentDashboardData["upcomingEvents"][number]) {
   if (event.status === "live") return <Badge variant="error">Live</Badge>;
+  if (event.type === "quiz") {
+    if (event.quizState === "overdue") return <Badge variant="error">Quiz overdue</Badge>;
+    if (event.quizState === "due_soon") return <Badge variant="warning">Quiz due soon</Badge>;
+    if (event.quizState === "retry") return <Badge variant="default">Retry available</Badge>;
+    if (event.quizState === "in_progress") return <Badge variant="default">Quiz in progress</Badge>;
+    return <Badge variant="secondary">Quiz due</Badge>;
+  }
   if (event.type !== "deadline") return null;
   if (event.assignmentState === "overdue") return <Badge variant="error">Overdue</Badge>;
   if (event.assignmentState === "due_soon") return <Badge variant="warning">Due soon</Badge>;
@@ -200,7 +215,7 @@ export default function RealDashboard({ data }: { data: StudentDashboardData }) 
         <div className="space-y-8">
           <section>
             <h2 className="mb-4 text-xl font-bold text-[var(--color-text-primary)]">Your Stats</h2>
-            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
               <Card className="p-4">
                 <BookOpen className="mb-2 h-5 w-5 text-[var(--color-info)]" />
                 <p className="text-2xl font-bold text-[var(--color-text-primary)]">{data.courses.length}</p>
@@ -216,6 +231,16 @@ export default function RealDashboard({ data }: { data: StudentDashboardData }) 
                 <p className="text-2xl font-bold text-[var(--color-text-primary)]">{data.completedRecordings}</p>
                 <p className="text-xs font-medium text-[var(--color-text-muted)]">Recordings Watched</p>
               </Card>
+              <Card className="p-4">
+                <ClipboardList className="mb-2 h-5 w-5 text-[var(--color-warning)]" />
+                <p className="text-2xl font-bold text-[var(--color-text-primary)]">{data.assignmentsGraded}/{data.assignmentsSubmitted}</p>
+                <p className="text-xs font-medium text-[var(--color-text-muted)]">Assignments Graded</p>
+              </Card>
+              <Card className="p-4">
+                <Award className="mb-2 h-5 w-5 text-[var(--color-success)]" />
+                <p className="text-2xl font-bold text-[var(--color-text-primary)]">{data.quizzesPassed}/{data.quizAttemptsCompleted}</p>
+                <p className="text-xs font-medium text-[var(--color-text-muted)]">Quizzes Passed</p>
+              </Card>
             </div>
           </section>
 
@@ -226,7 +251,7 @@ export default function RealDashboard({ data }: { data: StudentDashboardData }) 
                 <div className="p-6 text-center">
                   <CalendarDays className="mx-auto mb-3 h-7 w-7 text-[var(--color-text-muted)]" />
                   <p className="font-semibold text-[var(--color-text-primary)]">Nothing scheduled</p>
-                  <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Live sessions and assignment deadlines will appear here.</p>
+                  <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Live sessions, assignments and quiz deadlines will appear here.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-[var(--color-border)]">
@@ -234,9 +259,9 @@ export default function RealDashboard({ data }: { data: StudentDashboardData }) 
                     <div key={event.id} className="p-4">
                       <div className="flex items-start gap-3">
                         <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius-sm)] ${
-                          event.assignmentState === "overdue"
+                          event.assignmentState === "overdue" || event.quizState === "overdue"
                             ? "bg-[var(--color-error-soft)] text-[var(--color-error)]"
-                            : event.assignmentState === "due_soon"
+                            : event.assignmentState === "due_soon" || event.quizState === "due_soon"
                               ? "bg-[var(--color-warning-soft)] text-[var(--color-warning)]"
                               : "bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
                         }`}>
@@ -259,9 +284,53 @@ export default function RealDashboard({ data }: { data: StudentDashboardData }) 
                               Open assignment
                             </Link>
                           )}
+                          {event.link && event.type === "quiz" && (
+                            <Link href={event.link} className="mt-3 inline-flex text-xs font-bold text-[var(--color-primary)] hover:underline">
+                              {event.quizState === "in_progress" ? "Continue quiz" : event.quizState === "retry" ? "Start retry" : "Open quiz"}
+                            </Link>
+                          )}
                         </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </section>
+
+          <section>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-[var(--color-text-primary)]">Recent Results</h2>
+              <Link href="/student/quizzes" className="text-sm font-semibold text-[var(--color-primary)] hover:underline">Assessments</Link>
+            </div>
+            <Card>
+              {data.recentResults.length === 0 ? (
+                <div className="p-6 text-center">
+                  <Award className="mx-auto mb-3 h-7 w-7 text-[var(--color-text-muted)]" />
+                  <p className="font-semibold text-[var(--color-text-primary)]">No results yet</p>
+                  <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Graded assignments and completed quizzes will appear here.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-[var(--color-border)]">
+                  {data.recentResults.slice(0, 4).map((result) => (
+                    <Link key={result.id} href={result.link} className="block p-4 transition-colors hover:bg-[var(--color-surface-elevated)]">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="mb-1 flex flex-wrap items-center gap-2">
+                            <Badge variant={result.kind === "quiz" ? (result.passed ? "success" : "error") : "secondary"}>
+                              {result.kind === "quiz" ? (result.passed ? "Quiz passed" : "Quiz result") : "Assignment graded"}
+                            </Badge>
+                            <span className="text-xs text-[var(--color-text-muted)]">{formatEventDate(result.completedAt)}</span>
+                          </div>
+                          <p className="truncate font-semibold text-[var(--color-text-primary)]">{result.title}</p>
+                          <p className="mt-1 truncate text-xs text-[var(--color-text-muted)]">{result.courseTitle}</p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="font-bold text-[var(--color-text-primary)]">{result.percentage == null ? result.scoreLabel : `${result.percentage}%`}</p>
+                          {result.percentage != null && <p className="text-[10px] text-[var(--color-text-muted)]">{result.scoreLabel}</p>}
+                        </div>
+                      </div>
+                    </Link>
                   ))}
                 </div>
               )}

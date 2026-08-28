@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export type QuizStatus = "draft" | "published" | "closed" | "archived";
 export type QuizQuestionType = "multiple_choice" | "true_false";
+export type QuizAnswerValue = string | string[];
 
 export type AdminQuizRecord = {
   id: string;
@@ -34,7 +35,7 @@ export type AdminQuizQuestionRecord = {
   question_type: QuizQuestionType;
   prompt: string;
   options: string[];
-  correct_answer: string;
+  correct_answers: string[];
   points: number;
 };
 
@@ -99,6 +100,7 @@ export type StudentQuizQuestion = {
   prompt: string;
   options: string[];
   points: number;
+  allows_multiple: boolean;
 };
 
 export type StudentQuizSessionData = {
@@ -108,7 +110,7 @@ export type StudentQuizSessionData = {
     attempt_number: number;
     started_at: string;
     expires_at: string | null;
-    initial_answers: Record<string, string>;
+    initial_answers: Record<string, QuizAnswerValue>;
     questions: StudentQuizQuestion[];
   } | null;
 };
@@ -128,11 +130,15 @@ function stringArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === "string");
 }
 
-function answerObject(value: unknown): Record<string, string> {
+function answerObject(value: unknown): Record<string, QuizAnswerValue> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  const result: Record<string, string> = {};
+  const result: Record<string, QuizAnswerValue> = {};
   for (const [key, answer] of Object.entries(value as Record<string, unknown>)) {
     if (typeof answer === "string") result[key] = answer;
+    else if (Array.isArray(answer)) {
+      const values = answer.filter((item): item is string => typeof item === "string");
+      if (values.length > 0) result[key] = values;
+    }
   }
   return result;
 }
@@ -141,7 +147,7 @@ const ADMIN_QUIZ_COLUMNS =
   "id,class_id,title,description,instructions,publish_at,due_at,time_limit_minutes,pass_percentage,status,created_at,updated_at,classes(name,status,course_id,intake_id,courses(title),intakes(name))" as const;
 
 const ADMIN_QUESTION_COLUMNS =
-  "id,quiz_id,position,question_type,prompt,options,correct_answer,points" as const;
+  "id,quiz_id,position,question_type,prompt,options,correct_answer,correct_answers,points" as const;
 
 const ADMIN_ATTEMPT_COLUMNS =
   "id,quiz_id,student_id,attempt_number,status,score_points,max_points,percentage,passed,timed_out,started_at,submitted_at,quizzes(title,class_id,classes(name,courses(title))),student_profiles(student_number,profiles(full_name,email))" as const;
@@ -256,7 +262,7 @@ export async function getAdminQuizQuestions(): Promise<AdminQuizQuestionRecord[]
     question_type: row.question_type,
     prompt: row.prompt,
     options: stringArray(row.options),
-    correct_answer: row.correct_answer,
+    correct_answers: stringArray(row.correct_answers).length > 0 ? stringArray(row.correct_answers) : [row.correct_answer].filter(Boolean),
     points: numeric(row.points),
   }));
 }
@@ -436,18 +442,24 @@ async function safeQuestions(quizId: string): Promise<StudentQuizQuestion[]> {
   try {
     const { data, error } = await createAdminClient()
       .from("quiz_questions")
-      .select("id,position,question_type,prompt,options,points")
+      .select("id,position,question_type,prompt,options,correct_answer,correct_answers,points")
       .eq("quiz_id", quizId)
       .order("position");
     if (error) return [];
-    return (data ?? []).map((row: any) => ({
-      id: row.id,
-      position: numeric(row.position),
-      question_type: row.question_type,
-      prompt: row.prompt,
-      options: row.question_type === "true_false" ? ["True", "False"] : stringArray(row.options),
-      points: numeric(row.points),
-    }));
+    return (data ?? []).map((row: any) => {
+      const correctAnswers = stringArray(row.correct_answers).length > 0
+        ? stringArray(row.correct_answers)
+        : [row.correct_answer].filter(Boolean);
+      return {
+        id: row.id,
+        position: numeric(row.position),
+        question_type: row.question_type,
+        prompt: row.prompt,
+        options: row.question_type === "true_false" ? ["True", "False"] : stringArray(row.options),
+        points: numeric(row.points),
+        allows_multiple: row.question_type === "multiple_choice" && correctAnswers.length > 1,
+      };
+    });
   } catch {
     return [];
   }

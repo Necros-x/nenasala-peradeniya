@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import type { StudentQuizQuestion } from "@/lib/services/quizzes";
+import type { QuizAnswerValue, StudentQuizQuestion } from "@/lib/services/quizzes";
 
 export type QuizAttemptActionResult = {
   ok: boolean;
@@ -13,7 +13,7 @@ export type QuizAttemptActionResult = {
     attempt_number: number;
     started_at: string;
     expires_at: string | null;
-    initial_answers: Record<string, string>;
+    initial_answers: Record<string, QuizAnswerValue>;
     questions: StudentQuizQuestion[];
   };
   result?: {
@@ -63,54 +63,77 @@ async function studentContext() {
 async function safeQuestions(adminClient: ReturnType<typeof createAdminClient>, quizId: string): Promise<StudentQuizQuestion[]> {
   const { data, error } = await adminClient
     .from("quiz_questions")
-    .select("id,position,question_type,prompt,options,points")
+    .select("id,position,question_type,prompt,options,correct_answer,correct_answers,points")
     .eq("quiz_id", quizId)
     .order("position");
   if (error) return [];
-  return (data ?? []).map((row: any) => ({
-    id: row.id,
-    position: numeric(row.position),
-    question_type: row.question_type,
-    prompt: row.prompt,
-    options: row.question_type === "true_false" ? ["True", "False"] : stringArray(row.options),
-    points: numeric(row.points),
-  }));
+  return (data ?? []).map((row: any) => {
+    const correctAnswers = stringArray(row.correct_answers).length > 0
+      ? stringArray(row.correct_answers)
+      : [row.correct_answer].filter(Boolean);
+    return {
+      id: row.id,
+      position: numeric(row.position),
+      question_type: row.question_type,
+      prompt: row.prompt,
+      options: row.question_type === "true_false" ? ["True", "False"] : stringArray(row.options),
+      points: numeric(row.points),
+      allows_multiple: row.question_type === "multiple_choice" && correctAnswers.length > 1,
+    };
+  });
 }
 
 function expiry(startedAt: string, minutes: number | null) {
   return minutes ? new Date(new Date(startedAt).getTime() + minutes * 60_000).toISOString() : null;
 }
 
-function normalizeAnswer(type: string, value: unknown) {
-  if (typeof value !== "string") return "";
+function normalizeAnswerValue(type: string, value: string) {
   const trimmed = value.trim();
   return type === "true_false" ? trimmed.toLowerCase() : trimmed;
+}
+
+function normalizeAnswerValues(type: string, value: unknown): string[] {
+  const raw = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
+  return [...new Set(raw
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => normalizeAnswerValue(type, item))
+    .filter(Boolean))].sort();
+}
+
+function sameAnswerSet(left: string[], right: string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 async function gradeAttempt(
   adminClient: ReturnType<typeof createAdminClient>,
   attempt: any,
   quiz: any,
-  answersInput: Record<string, string>
+  answersInput: Record<string, QuizAnswerValue>
 ): Promise<QuizAttemptActionResult> {
   const { data: questions, error: questionError } = await adminClient
     .from("quiz_questions")
-    .select("id,question_type,correct_answer,points")
+    .select("id,question_type,correct_answer,correct_answers,points")
     .eq("quiz_id", quiz.id)
     .order("position");
   if (questionError || !questions?.length) return { ok: false, error: "Quiz questions could not be loaded." };
 
-  const answers: Record<string, string> = {};
+  const answers: Record<string, QuizAnswerValue> = {};
   let scorePoints = 0;
   let maxPoints = 0;
 
   for (const question of questions) {
     const points = numeric(question.points);
     maxPoints += points;
-    const answer = normalizeAnswer(question.question_type, answersInput[question.id]);
-    if (answer) answers[question.id] = answer;
-    const correct = normalizeAnswer(question.question_type, question.correct_answer);
-    if (answer && answer === correct) scorePoints += points;
+    const answerValues = normalizeAnswerValues(question.question_type, answersInput[question.id]);
+    const storedCorrectAnswers = stringArray(question.correct_answers).length > 0
+      ? stringArray(question.correct_answers)
+      : [question.correct_answer].filter(Boolean);
+    const correctValues = normalizeAnswerValues(question.question_type, storedCorrectAnswers);
+
+    if (answerValues.length === 1) answers[question.id] = answerValues[0];
+    else if (answerValues.length > 1) answers[question.id] = answerValues;
+
+    if (answerValues.length > 0 && sameAnswerSet(answerValues, correctValues)) scorePoints += points;
   }
 
   const percentage = maxPoints > 0 ? Math.round((scorePoints / maxPoints) * 10000) / 100 : 0;
@@ -177,7 +200,7 @@ export async function startQuizAttemptAction(quizId: string): Promise<QuizAttemp
   if (active) {
     const expiresAt = expiry(active.started_at, quiz.time_limit_minutes == null ? null : numeric(quiz.time_limit_minutes));
     if (expiresAt && Date.now() > new Date(expiresAt).getTime()) {
-      return gradeAttempt(adminClient, active, quiz, (active.answers ?? {}) as Record<string, string>);
+      return gradeAttempt(adminClient, active, quiz, (active.answers ?? {}) as Record<string, QuizAnswerValue>);
     }
     const questions = await safeQuestions(adminClient, quizId);
     return {
@@ -187,7 +210,7 @@ export async function startQuizAttemptAction(quizId: string): Promise<QuizAttemp
         attempt_number: numeric(active.attempt_number),
         started_at: active.started_at,
         expires_at: expiresAt,
-        initial_answers: (active.answers ?? {}) as Record<string, string>,
+        initial_answers: (active.answers ?? {}) as Record<string, QuizAnswerValue>,
         questions,
       },
     };
@@ -285,7 +308,7 @@ export async function startQuizAttemptAction(quizId: string): Promise<QuizAttemp
 
 export async function submitQuizAttemptAction(
   attemptId: string,
-  answers: Record<string, string>
+  answers: Record<string, QuizAnswerValue>
 ): Promise<QuizAttemptActionResult> {
   if (!attemptId) return { ok: false, error: "Attempt is required." };
   const ctx = await studentContext();

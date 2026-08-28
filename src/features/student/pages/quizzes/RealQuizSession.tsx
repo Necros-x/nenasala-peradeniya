@@ -8,7 +8,7 @@ import { Card } from "@/features/student/components/ui/Card";
 import { Button } from "@/features/student/components/ui/Button";
 import { Badge } from "@/features/student/components/ui/Badge";
 import { startQuizAttemptAction, submitQuizAttemptAction } from "@/lib/actions/student/quizzes";
-import type { StudentQuizSessionData } from "@/lib/services/quizzes";
+import type { QuizAnswerValue, StudentQuizSessionData } from "@/lib/services/quizzes";
 
 type ActiveAttempt = NonNullable<StudentQuizSessionData["attempt"]>;
 type Result = {
@@ -47,7 +47,7 @@ function formatDate(value: string | null) {
 export default function RealQuizSession({ initialData }: { initialData: StudentQuizSessionData | null }) {
   const router = useRouter();
   const [active, setActive] = useState<ActiveAttempt | null>(initialData?.attempt ?? null);
-  const [answers, setAnswers] = useState<Record<string, string>>(initialData?.attempt?.initial_answers ?? {});
+  const [answers, setAnswers] = useState<Record<string, QuizAnswerValue>>(initialData?.attempt?.initial_answers ?? {});
   const [currentIndex, setCurrentIndex] = useState(0);
   const [starting, setStarting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -87,7 +87,7 @@ export default function RealQuizSession({ initialData }: { initialData: StudentQ
   const quiz = initialData.quiz;
   const questions = active?.questions ?? [];
   const currentQuestion = questions[currentIndex];
-  const answeredCount = Object.keys(answers).filter((key) => Boolean(answers[key])).length;
+  const answeredCount = Object.values(answers).filter((answer) => Array.isArray(answer) ? answer.length > 0 : Boolean(answer)).length;
 
   async function handleStart() {
     setStarting(true);
@@ -224,12 +224,32 @@ export default function RealQuizSession({ initialData }: { initialData: StudentQ
       <Card className="p-6 sm:p-8">
         <div className="mb-6 flex items-start justify-between gap-4"><h2 className="text-lg font-semibold leading-relaxed text-[var(--color-text-primary)]">{currentQuestion.prompt}</h2><Badge variant="secondary">{currentQuestion.points} pts</Badge></div>
         <div className="space-y-3">
+          {currentQuestion.allows_multiple && <p className="mb-2 text-xs font-semibold text-[var(--color-primary)]">Select all correct options.</p>}
           {currentQuestion.options.map((option) => {
-            const selected = answers[currentQuestion.id] === (currentQuestion.question_type === "true_false" ? option.toLowerCase() : option);
             const value = currentQuestion.question_type === "true_false" ? option.toLowerCase() : option;
+            const currentAnswer = answers[currentQuestion.id];
+            const selected = Array.isArray(currentAnswer) ? currentAnswer.includes(value) : currentAnswer === value;
+            const choose = () => {
+              setAnswers((current) => {
+                if (!currentQuestion.allows_multiple) return { ...current, [currentQuestion.id]: value };
+                const raw = current[currentQuestion.id];
+                const existing = Array.isArray(raw) ? raw : typeof raw === "string" && raw ? [raw] : [];
+                const next = existing.includes(value) ? existing.filter((item) => item !== value) : [...existing, value];
+                const updated = { ...current };
+                if (next.length > 0) updated[currentQuestion.id] = next;
+                else delete updated[currentQuestion.id];
+                return updated;
+              });
+            };
             return (
-              <button key={option} type="button" onClick={() => setAnswers((current) => ({ ...current, [currentQuestion.id]: value }))} className={`w-full rounded-[var(--radius-md)] border-2 p-4 text-left transition-colors ${selected ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]/60" : "border-[var(--color-border)] bg-[var(--color-background)] hover:border-[var(--color-primary-muted)]"}`}>
-                <span className="flex items-center gap-3"><span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${selected ? "border-[var(--color-primary)]" : "border-[var(--color-border-strong)]"}`}>{selected && <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-primary)]" />}</span><span className="text-sm font-medium text-[var(--color-text-primary)]">{option}</span></span>
+              <button key={option} type="button" onClick={choose} className={`w-full rounded-[var(--radius-md)] border-2 p-4 text-left transition-colors ${selected ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]/60" : "border-[var(--color-border)] bg-[var(--color-background)] hover:border-[var(--color-primary-muted)]"}`}>
+                <span className="flex items-center gap-3">
+                  <span className={`grid h-5 w-5 shrink-0 place-items-center border-2 ${currentQuestion.allows_multiple ? "rounded-[5px]" : "rounded-full"} ${selected ? "border-[var(--color-primary)]" : "border-[var(--color-border-strong)]"}`}>
+                    {selected && currentQuestion.allows_multiple && <CheckCircle2 className="h-3.5 w-3.5 text-[var(--color-primary)]" />}
+                    {selected && !currentQuestion.allows_multiple && <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-primary)]" />}
+                  </span>
+                  <span className="text-sm font-medium text-[var(--color-text-primary)]">{option}</span>
+                </span>
               </button>
             );
           })}

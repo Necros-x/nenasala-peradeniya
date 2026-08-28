@@ -1,7 +1,7 @@
 import Schedule from "@/features/student/pages/Schedule";
 import { hasRealStudentSession } from "@/lib/auth/guards";
 import { hasValidDemoSession } from "@/lib/demo/session";
-import { getCurrentStudentAssignmentEvents } from "@/lib/services/assignments";
+import { getCurrentStudentAssessmentSummary } from "@/lib/services/student-assessments";
 import { getCurrentStudentSchedule } from "@/lib/services/student-media";
 
 export default async function Page() {
@@ -13,11 +13,11 @@ export default async function Page() {
 
   if (!realStudent && (demo || localPreview)) return <Schedule />;
 
-  const [liveEvents, assignmentEvents] = await Promise.all([
+  const [liveEvents, assessments] = await Promise.all([
     getCurrentStudentSchedule(),
-    getCurrentStudentAssignmentEvents(),
+    getCurrentStudentAssessmentSummary(),
   ]);
-  const events = [...liveEvents, ...assignmentEvents].sort(
+  const events = [...liveEvents, ...assessments.assignmentEvents, ...assessments.quizEvents].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 

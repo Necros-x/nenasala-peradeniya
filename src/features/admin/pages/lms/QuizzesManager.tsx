@@ -13,7 +13,6 @@ import {
   RotateCcw,
   Trash2,
   UsersRound,
-  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/features/admin/components/ui/badge";
@@ -30,6 +29,7 @@ import {
 import { Input } from "@/features/admin/components/ui/input";
 import { Label } from "@/features/admin/components/ui/label";
 import {
+  addQuizQuestionsBatchAction,
   deleteQuizQuestionAction,
   enableQuizRetryAction,
   moveQuizQuestionAction,
@@ -53,6 +53,210 @@ type Props = {
   accessKey: string;
   readOnlyDemo: boolean;
 };
+
+type QuestionDraft = {
+  question_type: QuizQuestionType;
+  prompt: string;
+  options: string[];
+  correct_indexes: number[];
+  true_false_correct: "true" | "false";
+  points: string;
+};
+
+function blankQuestion(type: QuizQuestionType = "multiple_choice"): QuestionDraft {
+  return {
+    question_type: type,
+    prompt: "",
+    options: ["", "", "", ""],
+    correct_indexes: [],
+    true_false_correct: "true",
+    points: "1",
+  };
+}
+
+function draftFromQuestion(question: AdminQuizQuestionRecord): QuestionDraft {
+  const options = question.question_type === "multiple_choice" ? question.options : ["True", "False"];
+  return {
+    question_type: question.question_type,
+    prompt: question.prompt,
+    options: options.length >= 2 ? options : ["", ""],
+    correct_indexes: question.question_type === "multiple_choice"
+      ? options.flatMap((option, index) => question.correct_answers.includes(option) ? [index] : [])
+      : [],
+    true_false_correct: question.correct_answers[0]?.toLowerCase() === "false" ? "false" : "true",
+    points: String(question.points),
+  };
+}
+
+function serializeQuestion(question: QuestionDraft) {
+  const options = question.question_type === "multiple_choice"
+    ? question.options.map((option) => option.trim())
+    : ["True", "False"];
+  const correctAnswers = question.question_type === "multiple_choice"
+    ? question.correct_indexes.map((index) => options[index]).filter(Boolean)
+    : [question.true_false_correct];
+
+  return {
+    question_type: question.question_type,
+    prompt: question.prompt.trim(),
+    options,
+    correct_answers: correctAnswers,
+    points: Number(question.points || "1"),
+  };
+}
+
+function QuestionEditor({
+  value,
+  onChange,
+  number,
+  canRemove,
+  onRemove,
+}: {
+  value: QuestionDraft;
+  onChange: (value: QuestionDraft) => void;
+  number: number;
+  canRemove?: boolean;
+  onRemove?: () => void;
+}) {
+  function setType(type: QuizQuestionType) {
+    onChange({
+      ...value,
+      question_type: type,
+      correct_indexes: [],
+      true_false_correct: "true",
+      options: type === "multiple_choice" ? (value.options.length >= 2 ? value.options : ["", "", "", ""]) : ["True", "False"],
+    });
+  }
+
+  function updateOption(index: number, option: string) {
+    const options = [...value.options];
+    options[index] = option;
+    onChange({ ...value, options });
+  }
+
+  function toggleCorrect(index: number) {
+    const selected = value.correct_indexes.includes(index);
+    onChange({
+      ...value,
+      correct_indexes: selected
+        ? value.correct_indexes.filter((item) => item !== index)
+        : [...value.correct_indexes, index].sort((a, b) => a - b),
+    });
+  }
+
+  function removeOption(index: number) {
+    if (value.options.length <= 2) return;
+    const options = value.options.filter((_, optionIndex) => optionIndex !== index);
+    const correctIndexes = value.correct_indexes
+      .filter((item) => item !== index)
+      .map((item) => item > index ? item - 1 : item);
+    onChange({ ...value, options, correct_indexes: correctIndexes });
+  }
+
+  return (
+    <div className="rounded-[var(--radius-md)] border border-border bg-background p-4 sm:p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="grid h-9 w-9 place-items-center rounded-full bg-[var(--color-primary-soft)] text-sm font-bold text-brand-primary">Q{number}</div>
+          <div>
+            <p className="font-semibold text-foreground">Question {number}</p>
+            <p className="text-xs text-text-muted">{value.question_type === "multiple_choice" ? "Multiple choice" : "True / False"}</p>
+          </div>
+        </div>
+        {canRemove && onRemove && (
+          <Button type="button" variant="ghost" size="sm" onClick={onRemove}>
+            <Trash2 className="mr-2 h-4 w-4 text-danger" /> Remove
+          </Button>
+        )}
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-[1fr_130px]">
+        <div>
+          <Label>Question type</Label>
+          <select
+            value={value.question_type}
+            onChange={(event) => setType(event.target.value as QuizQuestionType)}
+            className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+          >
+            <option value="multiple_choice">Multiple choice</option>
+            <option value="true_false">True / False</option>
+          </select>
+        </div>
+        <div>
+          <Label>Points</Label>
+          <Input
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={value.points}
+            onChange={(event) => onChange({ ...value, points: event.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <Label>Question</Label>
+        <textarea
+          value={value.prompt}
+          onChange={(event) => onChange({ ...value, prompt: event.target.value })}
+          rows={3}
+          className="mt-2 w-full rounded-md border border-border bg-background p-3 text-sm"
+          placeholder="Type the question..."
+        />
+      </div>
+
+      {value.question_type === "multiple_choice" ? (
+        <div className="mt-4 space-y-3">
+          <div>
+            <Label>Options</Label>
+            <p className="mt-1 text-xs text-text-muted">Tick every option that should count as correct. You can select more than one.</p>
+          </div>
+          {value.options.map((option, optionIndex) => (
+            <div key={optionIndex} className="flex items-center gap-2">
+              <label className={`flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-md border px-3 text-xs font-semibold transition-colors ${value.correct_indexes.includes(optionIndex) ? "border-success/40 bg-success/10 text-success" : "border-border bg-surface text-text-secondary"}`}>
+                <input
+                  type="checkbox"
+                  checked={value.correct_indexes.includes(optionIndex)}
+                  onChange={() => toggleCorrect(optionIndex)}
+                  className="h-4 w-4 accent-[var(--color-success)]"
+                />
+                Correct
+              </label>
+              <Input
+                value={option}
+                onChange={(event) => updateOption(optionIndex, event.target.value)}
+                placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
+              />
+              <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(optionIndex)} disabled={value.options.length <= 2}>
+                <Trash2 className="h-4 w-4 text-text-muted" />
+              </Button>
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" onClick={() => onChange({ ...value, options: [...value.options, ""] })}>
+            <Plus className="mr-2 h-4 w-4" /> Add option
+          </Button>
+        </div>
+      ) : (
+        <div className="mt-4">
+          <Label>Correct answer</Label>
+          <div className="mt-2 grid grid-cols-2 gap-3">
+            {(["true", "false"] as const).map((answer) => (
+              <label key={answer} className={`flex cursor-pointer items-center gap-3 rounded-md border p-3 text-sm font-semibold ${value.true_false_correct === answer ? "border-success/40 bg-success/10 text-success" : "border-border bg-surface text-text-secondary"}`}>
+                <input
+                  type="radio"
+                  checked={value.true_false_correct === answer}
+                  onChange={() => onChange({ ...value, true_false_correct: answer })}
+                  className="h-4 w-4 accent-[var(--color-success)]"
+                />
+                {answer === "true" ? "True" : "False"}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function formatDate(value: string | null) {
   if (!value) return "Not set";
@@ -95,23 +299,26 @@ export default function QuizzesManager({ classes, quizzes, questions, attempts, 
   const [selectedQuizId, setSelectedQuizId] = useState(quizzes[0]?.id ?? "");
   const [questionOpen, setQuestionOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<AdminQuizQuestionRecord | null>(null);
-  const [questionType, setQuestionType] = useState<QuizQuestionType>("multiple_choice");
-  const [optionsText, setOptionsText] = useState("");
+  const [editDraft, setEditDraft] = useState<QuestionDraft | null>(null);
+  const [draftQuestions, setDraftQuestions] = useState<QuestionDraft[]>([blankQuestion()]);
   const [deleteTarget, setDeleteTarget] = useState<AdminQuizQuestionRecord | null>(null);
   const [retryTarget, setRetryTarget] = useState<AdminQuizAttemptRecord | null>(null);
   const [saving, setSaving] = useState(false);
 
   const activeClasses = useMemo(() => classes.filter((item) => item.status !== "cancelled"), [classes]);
   const selectedQuiz = quizzes.find((item) => item.id === selectedQuizId) ?? null;
-  const selectedQuestions = questions
-    .filter((item) => item.quiz_id === selectedQuizId)
-    .sort((a, b) => a.position - b.position);
+  const selectedQuestions = questions.filter((item) => item.quiz_id === selectedQuizId).sort((a, b) => a.position - b.position);
   const submittedAttempts = attempts.filter((item) => item.status === "submitted");
   const passedCount = submittedAttempts.filter((item) => item.passed).length;
 
   useEffect(() => {
     if (!selectedQuizId && quizzes.length > 0) setSelectedQuizId(quizzes[0].id);
   }, [quizzes, selectedQuizId]);
+
+  function chooseQuiz(quizId: string) {
+    setSelectedQuizId(quizId);
+    setDraftQuestions([blankQuestion()]);
+  }
 
   function beginCreateQuiz() {
     setEditingQuiz(null);
@@ -123,20 +330,10 @@ export default function QuizzesManager({ classes, quizzes, questions, attempts, 
     setQuizOpen(true);
   }
 
-  function beginCreateQuestion() {
-    if (!selectedQuiz) return toast.error("Choose a quiz first.");
-    if (selectedQuiz.attempt_count > 0) return toast.error("Questions are locked after the first student attempt.");
-    setEditingQuestion(null);
-    setQuestionType("multiple_choice");
-    setOptionsText("");
-    setQuestionOpen(true);
-  }
-
   function beginEditQuestion(question: AdminQuizQuestionRecord) {
     if (selectedQuiz?.attempt_count) return toast.error("Questions are locked after the first student attempt.");
     setEditingQuestion(question);
-    setQuestionType(question.question_type);
-    setOptionsText(question.question_type === "multiple_choice" ? question.options.join("\n") : "");
+    setEditDraft(draftFromQuestion(question));
     setQuestionOpen(true);
   }
 
@@ -162,21 +359,39 @@ export default function QuizzesManager({ classes, quizzes, questions, attempts, 
     }
   }
 
-  async function submitQuestion(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function saveDraftBatch() {
     if (!selectedQuiz || readOnlyDemo) return;
     setSaving(true);
     try {
-      const formData = new FormData(event.currentTarget);
+      const formData = new FormData();
       formData.set("accessKey", accessKey);
       formData.set("quiz_id", selectedQuiz.id);
-      formData.set("question_type", questionType);
-      if (editingQuestion) formData.set("id", editingQuestion.id);
-      if (questionType === "multiple_choice") formData.set("options", optionsText);
+      formData.set("questions_json", JSON.stringify(draftQuestions.map(serializeQuestion)));
+      const result = await addQuizQuestionsBatchAction(formData);
+      if (!result.ok) return toast.error(result.error ?? "Unable to save questions.");
+      toast.success(`${draftQuestions.length} question${draftQuestions.length === 1 ? "" : "s"} added`);
+      setDraftQuestions([blankQuestion()]);
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveEditedQuestion() {
+    if (!selectedQuiz || !editingQuestion || !editDraft || readOnlyDemo) return;
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      formData.set("accessKey", accessKey);
+      formData.set("quiz_id", selectedQuiz.id);
+      formData.set("id", editingQuestion.id);
+      formData.set("question_json", JSON.stringify(serializeQuestion(editDraft)));
       const result = await saveQuizQuestionAction(formData);
-      if (!result.ok) return toast.error(result.error ?? "Unable to save question.");
-      toast.success(editingQuestion ? "Question updated" : "Question added");
+      if (!result.ok) return toast.error(result.error ?? "Unable to update question.");
+      toast.success("Question updated");
       setQuestionOpen(false);
+      setEditingQuestion(null);
+      setEditDraft(null);
       router.refresh();
     } finally {
       setSaving(false);
@@ -242,9 +457,7 @@ export default function QuizzesManager({ classes, quizzes, questions, attempts, 
         </Button>
       </div>
 
-      {readOnlyDemo && (
-        <div className="rounded-[var(--radius-md)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">Demo mode is read-only.</div>
-      )}
+      {readOnlyDemo && <div className="rounded-[var(--radius-md)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">Demo mode is read-only.</div>}
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card><CardContent className="flex items-center gap-4 p-5"><FileQuestion className="h-6 w-6 text-brand-primary" /><div><p className="text-2xl font-bold">{quizzes.length}</p><p className="text-sm text-text-secondary">Quizzes</p></div></CardContent></Card>
@@ -268,24 +481,15 @@ export default function QuizzesManager({ classes, quizzes, questions, attempts, 
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <Badge variant={quizVariant(quiz.status)}>{quiz.status}</Badge>
-                        <span className="text-xs text-text-muted">{quiz.question_count} questions • {quiz.total_points} pts</span>
-                      </div>
+                      <div className="mb-2 flex flex-wrap items-center gap-2"><Badge variant={quizVariant(quiz.status)}>{quiz.status}</Badge><span className="text-xs text-text-muted">{quiz.question_count} questions • {quiz.total_points} pts</span></div>
                       <h2 className="text-lg font-semibold text-foreground">{quiz.title}</h2>
                       <p className="mt-1 text-sm text-text-secondary">{quiz.course_title} • {quiz.class_name}</p>
-                      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-text-muted">
-                        <span>Pass: {quiz.pass_percentage}%</span>
-                        <span>{quiz.time_limit_minutes ? `${quiz.time_limit_minutes} min` : "Untimed"}</span>
-                        <span>Due: {formatDate(quiz.due_at)}</span>
-                      </div>
+                      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-text-muted"><span>Pass: {quiz.pass_percentage}%</span><span>{quiz.time_limit_minutes ? `${quiz.time_limit_minutes} min` : "Untimed"}</span><span>Due: {formatDate(quiz.due_at)}</span></div>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => beginEditQuiz(quiz)} disabled={readOnlyDemo}><Edit2 className="mr-2 h-4 w-4" /> Edit</Button>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" onClick={() => { setSelectedQuizId(quiz.id); setTab("questions"); }}>
-                      <ListChecks className="mr-2 h-4 w-4" /> Manage Questions
-                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => { chooseQuiz(quiz.id); setTab("questions"); }}><ListChecks className="mr-2 h-4 w-4" /> Manage Questions</Button>
                     {quiz.attempt_count > 0 && <Badge variant="outline">Questions locked • {quiz.attempt_count} attempt{quiz.attempt_count === 1 ? "" : "s"}</Badge>}
                   </div>
                 </CardContent>
@@ -296,49 +500,71 @@ export default function QuizzesManager({ classes, quizzes, questions, attempts, 
       ) : tab === "questions" ? (
         <div className="space-y-4">
           <Card><CardContent className="p-5">
-            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-              <div className="min-w-0 flex-1">
-                <Label htmlFor="quiz-builder-select">Quiz</Label>
-                <select
-                  id="quiz-builder-select"
-                  value={selectedQuizId}
-                  onChange={(event) => setSelectedQuizId(event.target.value)}
-                  className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-                >
-                  {quizzes.map((quiz) => <option key={quiz.id} value={quiz.id}>{quiz.title} — {quiz.class_name}</option>)}
-                </select>
-              </div>
-              <Button onClick={beginCreateQuestion} disabled={readOnlyDemo || !selectedQuiz || Boolean(selectedQuiz?.attempt_count)}>
-                <Plus className="mr-2 h-4 w-4" /> Add Question
-              </Button>
-            </div>
-            {selectedQuiz && (
-              <div className="mt-4 flex flex-wrap gap-3 text-sm text-text-secondary">
-                <span>{selectedQuiz.question_count} questions</span><span>•</span><span>{selectedQuiz.total_points} total points</span><span>•</span><span>Pass mark {selectedQuiz.pass_percentage}%</span>
-              </div>
-            )}
+            <Label htmlFor="quiz-builder-select">Quiz</Label>
+            <select id="quiz-builder-select" value={selectedQuizId} onChange={(event) => chooseQuiz(event.target.value)} className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm">
+              {quizzes.map((quiz) => <option key={quiz.id} value={quiz.id}>{quiz.title} — {quiz.class_name}</option>)}
+            </select>
+            {selectedQuiz && <div className="mt-4 flex flex-wrap gap-3 text-sm text-text-secondary"><span>{selectedQuiz.question_count} questions</span><span>•</span><span>{selectedQuiz.total_points} total points</span><span>•</span><span>Pass mark {selectedQuiz.pass_percentage}%</span></div>}
           </CardContent></Card>
 
           {!selectedQuiz ? (
             <Card><CardContent className="p-10 text-center text-text-secondary">Create a quiz first.</CardContent></Card>
-          ) : selectedQuestions.length === 0 ? (
-            <Card><CardContent className="p-10 text-center"><ListChecks className="mx-auto mb-3 h-8 w-8 text-brand-primary" /><h2 className="font-semibold">No questions yet</h2><p className="mt-1 text-sm text-text-secondary">Add multiple-choice or true/false questions.</p></CardContent></Card>
+          ) : selectedQuiz.attempt_count > 0 ? (
+            <Card><CardContent className="p-5 text-sm text-warning">Question editing is locked because a student has already started this quiz.</CardContent></Card>
           ) : (
+            <Card>
+              <CardContent className="space-y-5 p-5">
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">Add questions</h2>
+                  <p className="mt-1 text-sm text-text-secondary">Build Q1, Q2, Q3… in one go. Add as many questions as you need, then save them together.</p>
+                </div>
+                {draftQuestions.map((draft, index) => (
+                  <QuestionEditor
+                    key={index}
+                    value={draft}
+                    number={selectedQuestions.length + index + 1}
+                    canRemove={draftQuestions.length > 1}
+                    onRemove={() => setDraftQuestions((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                    onChange={(next) => setDraftQuestions((current) => current.map((item, itemIndex) => itemIndex === index ? next : item))}
+                  />
+                ))}
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+                  <Button type="button" variant="outline" onClick={() => setDraftQuestions((current) => [...current, blankQuestion()])} disabled={saving || readOnlyDemo}>
+                    <Plus className="mr-2 h-4 w-4" /> Add another question
+                  </Button>
+                  <Button type="button" onClick={saveDraftBatch} disabled={saving || readOnlyDemo}>
+                    {saving ? "Saving..." : `Save ${draftQuestions.length} new question${draftQuestions.length === 1 ? "" : "s"}`}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedQuiz && selectedQuestions.length > 0 && (
             <div className="space-y-3">
+              <h2 className="pt-2 text-sm font-bold uppercase tracking-wide text-text-muted">Saved questions</h2>
               {selectedQuestions.map((question, index) => (
                 <Card key={question.id}>
                   <CardContent className="p-5">
                     <div className="flex items-start gap-4">
                       <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--color-primary-soft)] font-bold text-brand-primary">{index + 1}</div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2"><Badge variant="secondary">{question.question_type === "multiple_choice" ? "Multiple choice" : "True / False"}</Badge><span className="text-xs text-text-muted">{question.points} pts</span></div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="secondary">{question.question_type === "multiple_choice" ? "Multiple choice" : "True / False"}</Badge>
+                          <span className="text-xs text-text-muted">{question.points} pts</span>
+                          {question.correct_answers.length > 1 && <Badge variant="success">{question.correct_answers.length} correct options</Badge>}
+                        </div>
                         <p className="mt-3 font-medium text-foreground">{question.prompt}</p>
-                        {question.question_type === "multiple_choice" && (
-                          <div className="mt-3 grid gap-1 text-sm text-text-secondary sm:grid-cols-2">
-                            {question.options.map((option) => <span key={option} className={option === question.correct_answer ? "font-semibold text-success" : ""}>• {option}</span>)}
+                        {question.question_type === "multiple_choice" ? (
+                          <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                            {question.options.map((option) => {
+                              const correct = question.correct_answers.includes(option);
+                              return <span key={option} className={`rounded-md border px-3 py-2 ${correct ? "border-success/30 bg-success/10 font-semibold text-success" : "border-border text-text-secondary"}`}>{correct ? "✓" : "•"} {option}</span>;
+                            })}
                           </div>
+                        ) : (
+                          <p className="mt-3 text-sm text-success">Correct answer: {question.correct_answers[0]?.toLowerCase() === "false" ? "False" : "True"}</p>
                         )}
-                        {question.question_type === "true_false" && <p className="mt-3 text-sm text-success">Correct answer: {question.correct_answer === "true" ? "True" : "False"}</p>}
                       </div>
                       <div className="flex shrink-0 flex-col gap-1 sm:flex-row">
                         <Button size="icon" variant="ghost" disabled={readOnlyDemo || index === 0 || Boolean(selectedQuiz.attempt_count)} onClick={() => moveQuestion(question, "up")}><ArrowUp className="h-4 w-4" /></Button>
@@ -366,24 +592,9 @@ export default function QuizzesManager({ classes, quizzes, questions, attempts, 
                     <td className="px-5 py-4"><p className="font-semibold text-foreground">{attempt.student_name}</p><p className="text-xs text-text-muted">{attempt.student_number}</p></td>
                     <td className="px-5 py-4"><p className="font-medium text-foreground">{attempt.quiz_title}</p><p className="text-xs text-text-muted">{attempt.course_title}</p></td>
                     <td className="px-5 py-4">#{attempt.attempt_number}</td>
-                    <td className="px-5 py-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant={attemptVariant(attempt)}>{attempt.status === "in_progress" ? "In progress" : attempt.passed ? "Passed" : attempt.timed_out ? "Timed out" : "Failed"}</Badge>
-                        {attempt.percentage != null && <span className="font-semibold">{attempt.percentage}%</span>}
-                        {attempt.retry_remaining > 0 && <Badge variant="warning">Retry enabled</Badge>}
-                      </div>
-                    </td>
+                    <td className="px-5 py-4"><div className="flex flex-wrap items-center gap-2"><Badge variant={attemptVariant(attempt)}>{attempt.status === "in_progress" ? "In progress" : attempt.passed ? "Passed" : attempt.timed_out ? "Timed out" : "Failed"}</Badge>{attempt.percentage != null && <span className="font-semibold">{attempt.percentage}%</span>}{attempt.retry_remaining > 0 && <Badge variant="warning">Retry enabled</Badge>}</div></td>
                     <td className="px-5 py-4 text-text-secondary">{formatDate(attempt.submitted_at)}</td>
-                    <td className="px-5 py-4 text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setRetryTarget(attempt)}
-                        disabled={readOnlyDemo || saving || attempt.status !== "submitted" || attempt.retry_remaining > 0}
-                      >
-                        <RotateCcw className="mr-2 h-4 w-4" /> {attempt.retry_remaining > 0 ? "Retry enabled" : "Enable retry"}
-                      </Button>
-                    </td>
+                    <td className="px-5 py-4 text-right"><Button size="sm" variant="outline" onClick={() => setRetryTarget(attempt)} disabled={readOnlyDemo || saving || attempt.status !== "submitted" || attempt.retry_remaining > 0}><RotateCcw className="mr-2 h-4 w-4" /> {attempt.retry_remaining > 0 ? "Retry enabled" : "Enable retry"}</Button></td>
                   </tr>
                 ))}
               </tbody>
@@ -414,21 +625,12 @@ export default function QuizzesManager({ classes, quizzes, questions, attempts, 
       </Dialog>
 
       <Dialog open={questionOpen} onOpenChange={(open) => !saving && setQuestionOpen(open)}>
-        <DialogContent className="sm:max-w-xl">
-          <form onSubmit={submitQuestion}>
-            <DialogHeader><DialogTitle>{editingQuestion ? "Edit Question" : "Add Question"}</DialogTitle><DialogDescription>Correct answers remain server-only and are never sent to the student quiz page.</DialogDescription></DialogHeader>
-            <div className="space-y-5 py-5">
-              <div><Label>Question type</Label><select value={questionType} onChange={(event) => setQuestionType(event.target.value as QuizQuestionType)} className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"><option value="multiple_choice">Multiple choice</option><option value="true_false">True / False</option></select></div>
-              <div><Label>Question</Label><textarea name="prompt" defaultValue={editingQuestion?.prompt ?? ""} rows={3} required className="mt-2 w-full rounded-md border border-border bg-background p-3 text-sm" /></div>
-              {questionType === "multiple_choice" ? (
-                <><div><Label>Options — one per line</Label><textarea value={optionsText} onChange={(event) => setOptionsText(event.target.value)} rows={5} required className="mt-2 w-full rounded-md border border-border bg-background p-3 text-sm" placeholder={'Option A\nOption B\nOption C\nOption D'} /></div><div><Label>Correct answer</Label><Input name="correct_answer" defaultValue={editingQuestion?.question_type === "multiple_choice" ? editingQuestion.correct_answer : ""} required placeholder="Must exactly match one option" /></div></>
-              ) : (
-                <div><Label>Correct answer</Label><select name="correct_answer" defaultValue={editingQuestion?.question_type === "true_false" ? editingQuestion.correct_answer : "true"} className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"><option value="true">True</option><option value="false">False</option></select></div>
-              )}
-              <div><Label>Points</Label><Input type="number" min="0.01" step="0.01" name="points" defaultValue={editingQuestion?.points ?? 1} required /></div>
-            </div>
-            <DialogFooter><Button type="button" variant="outline" onClick={() => setQuestionOpen(false)} disabled={saving}>Cancel</Button><Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Question"}</Button></DialogFooter>
-          </form>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader><DialogTitle>Edit Question</DialogTitle><DialogDescription>Tick one or more correct MCQ options. Students only see whether multiple selection is allowed—not the answer key.</DialogDescription></DialogHeader>
+          <div className="py-5">
+            {editDraft && <QuestionEditor value={editDraft} number={(editingQuestion?.position ?? 0) + 1} onChange={setEditDraft} />}
+          </div>
+          <DialogFooter><Button variant="outline" onClick={() => setQuestionOpen(false)} disabled={saving}>Cancel</Button><Button onClick={saveEditedQuestion} disabled={saving || !editDraft}>{saving ? "Saving..." : "Save Question"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
