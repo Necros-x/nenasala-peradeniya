@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { hasValidDemoSession, isAdminDemoEnabled } from "@/lib/demo/session";
 
-export type PlatformRole = "student" | "instructor" | "admin" | "super_admin";
+export type PlatformRole = "student" | "instructor" | "staff" | "admin" | "super_admin";
 
 function isLocalUiBypass() {
   return process.env.NODE_ENV !== "production" && process.env.LOCAL_UI_BYPASS === "true";
@@ -13,34 +13,51 @@ async function getVerifiedIdentity() {
   const supabase = await createClient();
   if (!supabase) return null;
 
-  // getUser() validates the JWT with Supabase rather than trusting local cookie contents.
+  // getUser() validates the JWT with Supabase rather than trusting cookie contents.
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return null;
 
-  // app_metadata is server-controlled. Do not authorize from user_metadata.
-  const role = data.user.app_metadata?.role as PlatformRole | undefined;
-  if (!role) return null;
-  return { id: data.user.id, role };
+  // Roles now come from the database rather than user-editable metadata.
+  const { data: rows, error: roleError } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", data.user.id);
+
+  if (roleError || !rows?.length) return null;
+
+  const roles = rows.map((row) => row.role as PlatformRole);
+  return { id: data.user.id, roles };
 }
 
 export async function requireStudent() {
-  if (isLocalUiBypass()) return { id: "local-ui-preview", role: "student" as const };
-  if (await hasValidDemoSession()) return { id: "demo-preview", role: "student" as const };
+  if (isLocalUiBypass()) return { id: "local-ui-preview", roles: ["student"] as PlatformRole[] };
+  if (await hasValidDemoSession()) return { id: "demo-preview", roles: ["student"] as PlatformRole[] };
 
   const identity = await getVerifiedIdentity();
   if (!identity) redirect("/login");
-  if (identity.role !== "student") redirect("/");
+  if (!identity.roles.includes("student")) redirect("/");
   return identity;
 }
 
 export async function requireAdmin(loginPath: string) {
-  if (isLocalUiBypass()) return { id: "local-ui-preview", role: "super_admin" as const };
+  if (isLocalUiBypass()) return { id: "local-ui-preview", roles: ["super_admin"] as PlatformRole[] };
   if (isAdminDemoEnabled() && (await hasValidDemoSession())) {
-    return { id: "demo-preview", role: "super_admin" as const };
+    return { id: "demo-preview", roles: ["super_admin"] as PlatformRole[] };
   }
 
   const identity = await getVerifiedIdentity();
   if (!identity) redirect(loginPath);
-  if (identity.role !== "admin" && identity.role !== "super_admin") redirect("/");
+  if (!identity.roles.some((role) => role === "admin" || role === "super_admin")) redirect("/");
+  return identity;
+}
+
+/**
+ * Strict guard for mutations. Demo/local preview sessions never satisfy this.
+ * This prevents a UI bypass from becoming a database-write bypass.
+ */
+export async function requireRealAdmin() {
+  const identity = await getVerifiedIdentity();
+  if (!identity) return null;
+  if (!identity.roles.some((role) => role === "admin" || role === "super_admin")) return null;
   return identity;
 }

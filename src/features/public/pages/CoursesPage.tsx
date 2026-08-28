@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { getCourses } from "../lib/mock-data";
 import { Course } from "../types";
 import { CourseCard } from "../components/courses/CourseCard";
 import { Input } from "../components/ui/Input";
@@ -11,15 +10,12 @@ import { Search, SlidersHorizontal, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { textMaskReveal, revealUp, staggerContainer, cardFadeUp } from "../lib/motion";
 
-export function CoursesPage() {
-  const [courses, setCourses] = useState<Course[]>([]);
+export function CoursesPage({ initialCourses = [] }: { initialCourses?: Course[] }) {
+  const courses = initialCourses;
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  useEffect(() => {
-    getCourses().then(setCourses);
-  }, []);
 
   const categories = Array.from(new Set(courses.map(c => c.category)));
 

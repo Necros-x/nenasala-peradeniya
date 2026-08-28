@@ -1,7 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getFeaturedCourses } from "../lib/mock-data";
 import { Course } from "../types";
 import { HeroSection } from "../components/home/HeroSection";
 import { IntroSection } from "../components/home/IntroSection";
@@ -14,12 +12,7 @@ import { UpcomingIntakesSection } from "../components/home/UpcomingIntakesSectio
 import { TestimonialsSection } from "../components/home/TestimonialsSection";
 import { FinalCTASection } from "../components/home/FinalCTASection";
 
-export function HomePage() {
-  const [featuredCourses, setFeaturedCourses] = useState<Course[]>([]);
-
-  useEffect(() => {
-    getFeaturedCourses().then(setFeaturedCourses);
-  }, []);
+export function HomePage({ featuredCourses = [] }: { featuredCourses?: Course[] }) {
 
   return (
     <div className="flex flex-col w-full bg-[var(--color-background)]">

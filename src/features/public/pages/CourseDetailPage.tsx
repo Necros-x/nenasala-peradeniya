@@ -1,35 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { getCourseBySlug, getInstructorById, getIntakesByCourseId } from "../lib/mock-data";
+import { Link } from "react-router-dom";
 import { Course, Instructor, Intake } from "../types";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { Card, CardContent } from "../components/ui/Card";
 import { ArrowLeft, Clock, BookOpen, Calendar, User, CheckCircle2, ChevronRight } from "lucide-react";
 
-export function CourseDetailPage() {
-  const { slug } = useParams<{ slug: string }>();
-  const [course, setCourse] = useState<Course | null>(null);
-  const [instructor, setInstructor] = useState<Instructor | null>(null);
-  const [intakes, setIntakes] = useState<Intake[]>([]);
-  const [loading, setLoading] = useState(true);
+type CourseDetailPageProps = {
+  initialCourse: Course | null;
+  initialInstructor?: Instructor | null;
+  initialIntakes?: Intake[];
+};
 
-  useEffect(() => {
-    if (slug) {
-      getCourseBySlug(slug).then(c => {
-        setCourse(c || null);
-        if (c?.instructorId) {
-          getInstructorById(c.instructorId).then(i => setInstructor(i || null));
-        }
-        if (c?.id) {
-          getIntakesByCourseId(c.id).then(setIntakes);
-        }
-        setLoading(false);
-      });
-    }
-  }, [slug]);
+export function CourseDetailPage({
+  initialCourse,
+  initialInstructor = null,
+  initialIntakes = [],
+}: CourseDetailPageProps) {
+  const course = initialCourse;
+  const instructor = initialInstructor;
+  const intakes = initialIntakes;
+  const loading = false;
 
   if (loading) {
     return (
@@ -61,7 +53,7 @@ export function CourseDetailPage() {
               <img src={course.thumbnail} alt="" className="w-full h-full object-cover" />
            </div>
         )}
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 lg:py-20 relative z-10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 mt-10 lg:px-8 py-12 lg:py-20 relative z-10">
           <div className="max-w-3xl">
             <Link to="/courses" className="inline-flex items-center text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] mb-6">
               <ArrowLeft className="mr-2 h-4 w-4" />
