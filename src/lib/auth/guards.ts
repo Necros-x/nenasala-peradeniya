@@ -29,6 +29,11 @@ async function getVerifiedIdentity() {
   return { id: data.user.id, roles };
 }
 
+export async function hasRealStudentSession() {
+  const identity = await getVerifiedIdentity();
+  return Boolean(identity?.roles.includes("student"));
+}
+
 export async function requireStudent() {
   if (isLocalUiBypass()) return { id: "local-ui-preview", roles: ["student"] as PlatformRole[] };
   if (await hasValidDemoSession()) return { id: "demo-preview", roles: ["student"] as PlatformRole[] };
