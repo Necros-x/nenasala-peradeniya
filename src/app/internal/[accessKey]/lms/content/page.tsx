@@ -1,10 +1,22 @@
-import { AdminPlaceholder } from "@/components/admin/AdminPlaceholder";
+import CourseContentManager from "@/features/admin/pages/lms/CourseContentManager";
+import { hasValidDemoSession, isAdminDemoEnabled } from "@/lib/demo/session";
+import { getAdminCourseContent } from "@/lib/services/course-content";
+import { getAdminCourses } from "@/lib/services/courses";
 
-export default function Page() {
+export default async function Page({ params }: { params: Promise<{ accessKey: string }> }) {
+  const { accessKey } = await params;
+  const [courses, modules, demo] = await Promise.all([
+    getAdminCourses(),
+    getAdminCourseContent(),
+    hasValidDemoSession(),
+  ]);
+
   return (
-    <AdminPlaceholder
-      title="Course Content"
-      description="Build modules, lessons, learning resources and protected course content."
+    <CourseContentManager
+      courses={courses}
+      modules={modules}
+      accessKey={accessKey}
+      readOnlyDemo={isAdminDemoEnabled() && demo}
     />
   );
 }

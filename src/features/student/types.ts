@@ -29,7 +29,7 @@ export type Instructor = {
   avatar?: string;
 };
 
-export type LessonType = 'video' | 'text' | 'document' | 'quiz' | 'assignment';
+export type LessonType = 'video' | 'text' | 'document' | 'external' | 'quiz' | 'assignment';
 
 export type Lesson = {
   id: string;
@@ -37,8 +37,13 @@ export type Lesson = {
   type: LessonType;
   duration?: number; // in minutes
   completed?: boolean;
-  content?: string; // HTML or markdown
-  videoUrl?: string; // e.g. youtube link
+  description?: string;
+  content?: string; // Safe plain text in real LMS lessons; mock data may still use strings
+  videoUrl?: string; // embeddable video URL
+  resourceUrl?: string; // short-lived signed URL for private document resources
+  resourceName?: string;
+  externalUrl?: string;
+  externalLabel?: string;
 };
 
 export type Module = {

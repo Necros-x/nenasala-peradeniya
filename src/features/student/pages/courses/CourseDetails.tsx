@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { PlayCircle, CheckCircle2, Lock, FileText, ChevronDown } from 'lucide-react';
-import { Card } from '@/features/student/components/ui/Card';
-import { Button } from '@/features/student/components/ui/Button';
-import { Progress } from '@/features/student/components/ui/Progress';
-import { Skeleton } from '@/features/student/components/ui/Skeleton';
-import { getCourseById } from '@/features/student/lib/services';
-import { Course } from '@/features/student/types';
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { CheckCircle2, ChevronDown, FileText, Link2, Lock, PlayCircle } from "lucide-react";
+import { Card } from "@/features/student/components/ui/Card";
+import { Button } from "@/features/student/components/ui/Button";
+import { Progress } from "@/features/student/components/ui/Progress";
+import { Skeleton } from "@/features/student/components/ui/Skeleton";
+import { getCourseById } from "@/features/student/lib/services";
+import type { Course } from "@/features/student/types";
 
 export default function CourseDetails({ initialCourse }: { initialCourse?: Course | null }) {
   const { id } = useParams<{ id: string }>();
@@ -23,8 +24,8 @@ export default function CourseDetails({ initialCourse }: { initialCourse?: Cours
     }
 
     if (id) {
-      getCourseById(id).then(c => {
-        setCourse(c || null);
+      getCourseById(id).then((value) => {
+        setCourse(value || null);
         setLoading(false);
       });
     }
@@ -34,8 +35,8 @@ export default function CourseDetails({ initialCourse }: { initialCourse?: Cours
     return (
       <div className="space-y-8">
         <Skeleton className="h-64 w-full rounded-[var(--radius-lg)]" />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-4">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="space-y-4 lg:col-span-2">
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
           </div>
@@ -45,39 +46,43 @@ export default function CourseDetails({ initialCourse }: { initialCourse?: Cours
     );
   }
 
-  if (!course) {
-    return <div className="text-center py-20">Course not found.</div>;
-  }
+  if (!course) return <div className="py-20 text-center">Course not found.</div>;
 
   const isDemoCourse = initialCourse === undefined;
-  const progress = isDemoCourse && course.id === 'c_1' ? 35 : 0;
+  const demoProgress = course.id === "c_1" ? 35 : 0;
 
-  const LessonIcon = ({ type, completed, locked }: { type: string, completed?: boolean, locked?: boolean }) => {
-    if (locked) return <Lock className="w-5 h-5 text-[var(--color-text-muted)]" />;
-    if (completed) return <CheckCircle2 className="w-5 h-5 text-[var(--color-success)]" />;
-    if (type === 'video') return <PlayCircle className="w-5 h-5 text-[var(--color-primary)]" />;
-    return <FileText className="w-5 h-5 text-[var(--color-primary)]" />;
-  };
+  function LessonIcon({ type, completed, locked }: { type: string; completed?: boolean; locked?: boolean }) {
+    if (locked) return <Lock className="h-5 w-5 text-[var(--color-text-muted)]" />;
+    if (completed) return <CheckCircle2 className="h-5 w-5 text-[var(--color-success)]" />;
+    if (type === "video") return <PlayCircle className="h-5 w-5 text-[var(--color-primary)]" />;
+    if (type === "external") return <Link2 className="h-5 w-5 text-[var(--color-primary)]" />;
+    return <FileText className="h-5 w-5 text-[var(--color-primary)]" />;
+  }
+
+  const firstLesson = course.modules.flatMap((module) => module.lessons)[0];
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Hero Section */}
-      <div className="relative rounded-[var(--radius-lg)] overflow-hidden bg-[var(--color-static-black)] text-[var(--color-static-white)] shadow-lg">
+      <div className="relative overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-static-black)] text-[var(--color-static-white)] shadow-lg">
         <div className="absolute inset-0 opacity-40">
-          {course.thumbnail ? <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover blur-sm" /> : <div className="h-full w-full bg-[var(--color-primary)]/30" />}
-        </div>
-        <div className="relative p-8 md:p-12 z-10 flex flex-col md:flex-row gap-8 items-center md:items-start">
           {course.thumbnail ? (
-            <img src={course.thumbnail} alt={course.title} className="w-48 h-32 md:w-64 md:h-40 rounded-[var(--radius-md)] object-cover shadow-2xl border border-[var(--color-static-white)]/10 shrink-0" />
+            <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover blur-sm" />
           ) : (
-            <div className="grid w-48 h-32 md:w-64 md:h-40 shrink-0 place-items-center rounded-[var(--radius-md)] border border-[var(--color-static-white)]/10 bg-[var(--color-primary)]/30 font-semibold">Nenasala</div>
+            <div className="h-full w-full bg-[var(--color-primary)]/30" />
+          )}
+        </div>
+        <div className="relative z-10 flex flex-col items-center gap-8 p-8 md:flex-row md:items-start md:p-12">
+          {course.thumbnail ? (
+            <img src={course.thumbnail} alt={course.title} className="h-32 w-48 shrink-0 rounded-[var(--radius-md)] border border-[var(--color-static-white)]/10 object-cover shadow-2xl md:h-40 md:w-64" />
+          ) : (
+            <div className="grid h-32 w-48 shrink-0 place-items-center rounded-[var(--radius-md)] border border-[var(--color-static-white)]/10 bg-[var(--color-primary)]/30 font-semibold md:h-40 md:w-64">Nenasala</div>
           )}
           <div className="flex-1 text-center md:text-left">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2">{course.title}</h1>
-            <p className="text-[var(--color-on-brand)]/75 text-lg mb-4">{course.description}</p>
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm font-medium text-[var(--color-on-brand)]/75">
+            <h1 className="mb-2 text-3xl font-bold tracking-tight md:text-4xl">{course.title}</h1>
+            <p className="mb-4 text-lg text-[var(--color-on-brand)]/75">{course.description}</p>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-sm font-medium text-[var(--color-on-brand)]/75 md:justify-start">
               <span className="flex items-center gap-2">
-                {course.instructor.avatar ? <img src={course.instructor.avatar} alt={course.instructor.name} className="w-6 h-6 rounded-full" /> : null}
+                {course.instructor.avatar ? <img src={course.instructor.avatar} alt={course.instructor.name} className="h-6 w-6 rounded-full" /> : null}
                 {course.instructor.name}
               </span>
               <span>•</span>
@@ -87,70 +92,80 @@ export default function CourseDetails({ initialCourse }: { initialCourse?: Cours
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-        {/* Curriculum */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
           <h2 className="text-2xl font-bold">Course Content</h2>
           {course.modules.length === 0 ? (
             <Card className="p-6 text-center">
               <h3 className="font-semibold text-[var(--color-text-primary)]">Course content is being prepared</h3>
-              <p className="mt-2 text-sm text-[var(--color-text-secondary)]">Your enrollment is active. Modules, lessons and recordings will appear here as they are published.</p>
+              <p className="mt-2 text-sm text-[var(--color-text-secondary)]">Your enrollment is active. Published modules and lessons will appear here as they are released.</p>
             </Card>
           ) : (
-          <div className="space-y-4">
-            {course.modules.map((mod, mIdx) => (
-              <Card key={mod.id} className="overflow-hidden">
-                <div className="p-4 bg-[var(--color-surface-elevated)]/50 border-b border-[var(--color-border)] flex items-center justify-between font-semibold">
-                  <span>Module {mIdx + 1}: {mod.title}</span>
-                  <ChevronDown className="w-5 h-5 text-[var(--color-text-muted)]" />
-                </div>
-                <div className="divide-y divide-[var(--color-border)]">
-                  {mod.lessons.map((lesson, lIdx) => {
-                    const isLocked = course.id !== 'c_1' && lIdx > 0;
-                    return (
-                      <Link
-                        key={lesson.id}
-                        to={isLocked ? '#' : `/courses/${course.id}/lesson/${lesson.id}`}
-                        className={`p-4 flex items-center gap-4 hover:bg-[var(--color-surface-elevated)] transition-colors ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
-                      >
-                        <LessonIcon type={lesson.type} completed={lesson.completed} locked={isLocked} />
-                        <div className="flex-1 min-w-0">
-                          <h4 className={`text-sm font-medium ${lesson.completed ? 'text-[var(--color-text-secondary)]' : 'text-[var(--color-text-primary)]'}`}>
-                            {lIdx + 1}. {lesson.title}
-                          </h4>
-                        </div>
-                        {lesson.duration && (
-                          <span className="text-xs text-[var(--color-text-muted)] font-medium">
-                            {lesson.duration} min
-                          </span>
-                        )}
-                      </Link>
-                    )
-                  })}
-                </div>
-              </Card>
-            ))}
-          </div>
+            <div className="space-y-4">
+              {course.modules.map((module, moduleIndex) => (
+                <Card key={module.id} className="overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface-elevated)]/50 p-4 font-semibold">
+                    <span>Module {moduleIndex + 1}: {module.title}</span>
+                    <ChevronDown className="h-5 w-5 text-[var(--color-text-muted)]" />
+                  </div>
+                  {module.lessons.length === 0 ? (
+                    <div className="p-4 text-sm text-[var(--color-text-muted)]">No published lessons in this module yet.</div>
+                  ) : (
+                    <div className="divide-y divide-[var(--color-border)]">
+                      {module.lessons.map((lesson, lessonIndex) => {
+                        const isLocked = isDemoCourse && course.id !== "c_1" && lessonIndex > 0;
+                        const row = (
+                          <>
+                            <LessonIcon type={lesson.type} completed={lesson.completed} locked={isLocked} />
+                            <div className="min-w-0 flex-1">
+                              <h4 className={`text-sm font-medium ${lesson.completed ? "text-[var(--color-text-secondary)]" : "text-[var(--color-text-primary)]"}`}>
+                                {lessonIndex + 1}. {lesson.title}
+                              </h4>
+                              {lesson.description && <p className="mt-1 line-clamp-1 text-xs text-[var(--color-text-muted)]">{lesson.description}</p>}
+                            </div>
+                            {lesson.duration !== undefined && <span className="text-xs font-medium text-[var(--color-text-muted)]">{lesson.duration} min</span>}
+                          </>
+                        );
+
+                        return isLocked ? (
+                          <div key={lesson.id} className="flex cursor-not-allowed items-center gap-4 p-4 opacity-60">{row}</div>
+                        ) : (
+                          <Link key={lesson.id} href={`/student/courses/${course.id}/lesson/${lesson.id}`} className="flex items-center gap-4 p-4 transition-colors hover:bg-[var(--color-surface-elevated)]">
+                            {row}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Card>
+              ))}
+            </div>
           )}
         </div>
 
-        {/* Sidebar Info */}
         <div className="space-y-6">
-          <Card className="p-6 sticky top-6">
-            <h3 className="font-bold text-lg mb-4">Your Progress</h3>
-            <div className="flex items-end gap-2 mb-2 text-[var(--color-text-primary)] font-semibold text-3xl">
-              {progress}% <span className="text-sm text-[var(--color-text-muted)] font-medium mb-1 relative top-[-4px]">Completed</span>
-            </div>
-            <Progress value={progress} className="h-2 mb-6" />
-            {course.modules[0]?.lessons[0] ? (
-              <Link to={`/courses/${course.id}/lesson/${course.modules[0].lessons[0].id}`}>
-                <Button className="w-full text-lg h-12">
-                  {progress > 0 ? 'Resume Course' : 'Start Course'}
-                </Button>
+          <Card className="sticky top-6 p-6">
+            {isDemoCourse ? (
+              <>
+                <h3 className="mb-4 text-lg font-bold">Your Progress</h3>
+                <div className="mb-2 flex items-end gap-2 text-3xl font-semibold text-[var(--color-text-primary)]">
+                  {demoProgress}% <span className="relative top-[-4px] mb-1 text-sm font-medium text-[var(--color-text-muted)]">Completed</span>
+                </div>
+                <Progress value={demoProgress} className="mb-6 h-2" />
+              </>
+            ) : (
+              <>
+                <h3 className="mb-2 text-lg font-bold">Start learning</h3>
+                <p className="mb-6 text-sm leading-relaxed text-[var(--color-text-secondary)]">Open a published lesson below. Lesson progress will be connected in the progress phase.</p>
+              </>
+            )}
+
+            {firstLesson ? (
+              <Link href={`/student/courses/${course.id}/lesson/${firstLesson.id}`}>
+                <Button className="h-12 w-full text-lg">{isDemoCourse && demoProgress > 0 ? "Resume Course" : "Start Course"}</Button>
               </Link>
             ) : (
-              <Button className="w-full text-lg h-12" disabled>Content coming soon</Button>
+              <Button className="h-12 w-full text-lg" disabled>Content coming soon</Button>
             )}
           </Card>
         </div>
