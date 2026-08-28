@@ -1,10 +1,26 @@
-import { AdminPlaceholder } from "@/components/admin/AdminPlaceholder";
+import QuizzesManager from "@/features/admin/pages/lms/QuizzesManager";
+import { hasValidDemoSession, isAdminDemoEnabled } from "@/lib/demo/session";
+import { getAdminClasses } from "@/lib/services/classes";
+import { getAdminQuizAttempts, getAdminQuizQuestions, getAdminQuizzes } from "@/lib/services/quizzes";
 
-export default function Page() {
+export default async function Page({ params }: { params: Promise<{ accessKey: string }> }) {
+  const { accessKey } = await params;
+  const [classes, quizzes, questions, attempts, demo] = await Promise.all([
+    getAdminClasses(),
+    getAdminQuizzes(),
+    getAdminQuizQuestions(),
+    getAdminQuizAttempts(),
+    hasValidDemoSession(),
+  ]);
+
   return (
-    <AdminPlaceholder
-      title="Quizzes"
-      description="Create quizzes, manage questions, attempts, pass marks and results."
+    <QuizzesManager
+      classes={classes}
+      quizzes={quizzes}
+      questions={questions}
+      attempts={attempts}
+      accessKey={accessKey}
+      readOnlyDemo={isAdminDemoEnabled() && demo}
     />
   );
 }

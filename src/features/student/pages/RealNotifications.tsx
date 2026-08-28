@@ -1,4 +1,4 @@
-import { Bell, BookOpen, CheckCircle2, ClipboardList, Info, Settings } from "lucide-react";
+import { Bell, BookOpen, CheckCircle2, ClipboardList, FileQuestion, Info, Settings } from "lucide-react";
 import { Badge } from "@/features/student/components/ui/Badge";
 import { Card } from "@/features/student/components/ui/Card";
 import type { Notification } from "@/features/student/types";
@@ -10,6 +10,7 @@ import {
 function notificationIcon(type: Notification["type"]) {
   if (type === "course") return <BookOpen className="h-5 w-5 text-[var(--color-primary)]" />;
   if (type === "assignment") return <ClipboardList className="h-5 w-5 text-[var(--color-primary)]" />;
+  if (type === "quiz") return <FileQuestion className="h-5 w-5 text-[var(--color-primary)]" />;
   if (type === "announcement") return <Info className="h-5 w-5 text-[var(--color-info)]" />;
   if (type === "system") return <Settings className="h-5 w-5 text-[var(--color-text-muted)]" />;
   return <Bell className="h-5 w-5 text-[var(--color-text-muted)]" />;
@@ -58,7 +59,7 @@ export default function RealNotifications({ initialNotifications }: { initialNot
             </div>
             <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">No notifications yet</h2>
             <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-              Assignment updates, resubmission permissions and other LMS alerts will appear here.
+              Assignments, quizzes, retry permissions and other LMS alerts will appear here.
             </p>
           </div>
         ) : (

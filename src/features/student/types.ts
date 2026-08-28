@@ -158,6 +158,6 @@ export type Notification = {
   message: string;
   timestamp: string;
   read: boolean;
-  type: 'course' | 'assignment' | 'announcement' | 'system';
+  type: 'course' | 'assignment' | 'quiz' | 'announcement' | 'system';
   link?: string;
 };

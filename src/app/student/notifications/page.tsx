@@ -4,6 +4,7 @@ import { hasRealStudentSession } from "@/lib/auth/guards";
 import { hasValidDemoSession } from "@/lib/demo/session";
 import { getCurrentStudentAssignments } from "@/lib/services/assignments";
 import { getCurrentStudentNotifications } from "@/lib/services/notifications";
+import { getCurrentStudentQuizzes } from "@/lib/services/quizzes";
 
 export default async function Page() {
   const localPreview = process.env.NODE_ENV !== "production" && process.env.LOCAL_UI_BYPASS === "true";
@@ -14,9 +15,11 @@ export default async function Page() {
 
   if (!realStudent && (demo || localPreview)) return <Notifications />;
 
-  // This also backfills idempotent publication notifications for assignments
-  // that became visible through a scheduled publish time.
-  await getCurrentStudentAssignments();
+  // Backfill idempotent notifications for scheduled content that has become visible.
+  await Promise.all([
+    getCurrentStudentAssignments(),
+    getCurrentStudentQuizzes(),
+  ]);
   const notifications = await getCurrentStudentNotifications();
   return <RealNotifications initialNotifications={notifications} />;
 }
