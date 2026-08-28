@@ -1,13 +1,3 @@
-# Nenasala Platform — Next.js Migration Baseline
-
-This is the unified **Next.js App Router** baseline created from the three AI Studio UI projects:
-
-- Public website
-- Student LMS portal
-- Admin portal
-
-Vite and React Router are not part of the shipped architecture. The old React Router imports inside migrated UI files are currently resolved through a small Next.js compatibility adapter (`src/lib/router-compat.tsx`) so the existing UI can be moved without a visual rewrite. We can remove the adapter incrementally as we normalize each feature.
-
 ## Stack
 
 - Next.js 16 App Router
@@ -48,7 +38,7 @@ Vite and React Router are not part of the shipped architecture. The old React Ro
 
 ### Admin
 
-Admin does **not** have a public `/admin` route and there is no admin link on the public website.
+Admin does **not**have a public `/admin` route and there is no admin link on the public website.
 
 The route is server-gated:
 

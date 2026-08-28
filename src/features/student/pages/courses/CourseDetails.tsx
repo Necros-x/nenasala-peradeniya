@@ -8,21 +8,27 @@ import { Button } from '@/features/student/components/ui/Button';
 import { Progress } from '@/features/student/components/ui/Progress';
 import { Skeleton } from '@/features/student/components/ui/Skeleton';
 import { getCourseById } from '@/features/student/lib/services';
-import { Course, Lesson } from '@/features/student/types';
+import { Course } from '@/features/student/types';
 
-export default function CourseDetails() {
+export default function CourseDetails({ initialCourse }: { initialCourse?: Course | null }) {
   const { id } = useParams<{ id: string }>();
-  const [course, setCourse] = useState<Course | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [course, setCourse] = useState<Course | null>(initialCourse ?? null);
+  const [loading, setLoading] = useState(initialCourse === undefined);
 
   useEffect(() => {
+    if (initialCourse !== undefined) {
+      setCourse(initialCourse);
+      setLoading(false);
+      return;
+    }
+
     if (id) {
       getCourseById(id).then(c => {
         setCourse(c || null);
         setLoading(false);
       });
     }
-  }, [id]);
+  }, [id, initialCourse]);
 
   if (loading) {
     return (
@@ -43,7 +49,8 @@ export default function CourseDetails() {
     return <div className="text-center py-20">Course not found.</div>;
   }
 
-  const progress = course.id === 'c_1' ? 35 : 0;
+  const isDemoCourse = initialCourse === undefined;
+  const progress = isDemoCourse && course.id === 'c_1' ? 35 : 0;
 
   const LessonIcon = ({ type, completed, locked }: { type: string, completed?: boolean, locked?: boolean }) => {
     if (locked) return <Lock className="w-5 h-5 text-[var(--color-text-muted)]" />;
@@ -57,16 +64,20 @@ export default function CourseDetails() {
       {/* Hero Section */}
       <div className="relative rounded-[var(--radius-lg)] overflow-hidden bg-[var(--color-static-black)] text-[var(--color-static-white)] shadow-lg">
         <div className="absolute inset-0 opacity-40">
-          <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover blur-sm" />
+          {course.thumbnail ? <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover blur-sm" /> : <div className="h-full w-full bg-[var(--color-primary)]/30" />}
         </div>
         <div className="relative p-8 md:p-12 z-10 flex flex-col md:flex-row gap-8 items-center md:items-start">
-          <img src={course.thumbnail} alt={course.title} className="w-48 h-32 md:w-64 md:h-40 rounded-[var(--radius-md)] object-cover shadow-2xl border border-[var(--color-static-white)]/10 shrink-0" />
+          {course.thumbnail ? (
+            <img src={course.thumbnail} alt={course.title} className="w-48 h-32 md:w-64 md:h-40 rounded-[var(--radius-md)] object-cover shadow-2xl border border-[var(--color-static-white)]/10 shrink-0" />
+          ) : (
+            <div className="grid w-48 h-32 md:w-64 md:h-40 shrink-0 place-items-center rounded-[var(--radius-md)] border border-[var(--color-static-white)]/10 bg-[var(--color-primary)]/30 font-semibold">Nenasala</div>
+          )}
           <div className="flex-1 text-center md:text-left">
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2">{course.title}</h1>
             <p className="text-[var(--color-on-brand)]/75 text-lg mb-4">{course.description}</p>
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm font-medium text-[var(--color-on-brand)]/75">
               <span className="flex items-center gap-2">
-                <img src={course.instructor.avatar} alt={course.instructor.name} className="w-6 h-6 rounded-full" />
+                {course.instructor.avatar ? <img src={course.instructor.avatar} alt={course.instructor.name} className="w-6 h-6 rounded-full" /> : null}
                 {course.instructor.name}
               </span>
               <span>•</span>
@@ -77,10 +88,16 @@ export default function CourseDetails() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Curriculum */}
         <div className="lg:col-span-2 space-y-6">
           <h2 className="text-2xl font-bold">Course Content</h2>
+          {course.modules.length === 0 ? (
+            <Card className="p-6 text-center">
+              <h3 className="font-semibold text-[var(--color-text-primary)]">Course content is being prepared</h3>
+              <p className="mt-2 text-sm text-[var(--color-text-secondary)]">Your enrollment is active. Modules, lessons and recordings will appear here as they are published.</p>
+            </Card>
+          ) : (
           <div className="space-y-4">
             {course.modules.map((mod, mIdx) => (
               <Card key={mod.id} className="overflow-hidden">
@@ -92,8 +109,8 @@ export default function CourseDetails() {
                   {mod.lessons.map((lesson, lIdx) => {
                     const isLocked = course.id !== 'c_1' && lIdx > 0;
                     return (
-                      <Link 
-                        key={lesson.id} 
+                      <Link
+                        key={lesson.id}
                         to={isLocked ? '#' : `/courses/${course.id}/lesson/${lesson.id}`}
                         className={`p-4 flex items-center gap-4 hover:bg-[var(--color-surface-elevated)] transition-colors ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
                       >
@@ -115,6 +132,7 @@ export default function CourseDetails() {
               </Card>
             ))}
           </div>
+          )}
         </div>
 
         {/* Sidebar Info */}
@@ -125,11 +143,15 @@ export default function CourseDetails() {
               {progress}% <span className="text-sm text-[var(--color-text-muted)] font-medium mb-1 relative top-[-4px]">Completed</span>
             </div>
             <Progress value={progress} className="h-2 mb-6" />
-            <Link to={`/courses/${course.id}/lesson/${course.modules[0].lessons[0].id}`}>
-              <Button className="w-full text-lg h-12">
-                {progress > 0 ? 'Resume Course' : 'Start Course'}
-              </Button>
-            </Link>
+            {course.modules[0]?.lessons[0] ? (
+              <Link to={`/courses/${course.id}/lesson/${course.modules[0].lessons[0].id}`}>
+                <Button className="w-full text-lg h-12">
+                  {progress > 0 ? 'Resume Course' : 'Start Course'}
+                </Button>
+              </Link>
+            ) : (
+              <Button className="w-full text-lg h-12" disabled>Content coming soon</Button>
+            )}
           </Card>
         </div>
       </div>

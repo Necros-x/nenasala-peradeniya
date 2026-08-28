@@ -1,109 +1,122 @@
 "use client";
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ChevronLeft, Upload, CheckCircle, Copy, AlertCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../../components/ui/card";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { AlertCircle, CheckCircle, ChevronLeft, Copy, Mail } from "lucide-react";
+import { toast } from "sonner";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
-import { toast } from "sonner";
+import { registerStudentAction } from "@/lib/actions/admin/students";
+import type { IntakeRecord } from "@/lib/services/intakes";
 
-export default function StudentRegistration() {
-  const navigate = useNavigate();
+export default function StudentRegistration({
+  intakes,
+  accessKey,
+  readOnlyDemo,
+}: {
+  intakes: IntakeRecord[];
+  accessKey: string;
+  readOnlyDemo: boolean;
+}) {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-
+  const [result, setResult] = useState<{ studentNumber: string; email: string } | null>(null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
-    course: "",
-    intake: "",
-    amount: "",
+    dateOfBirth: "",
+    address: "",
+    intakeId: "",
   });
 
-  const handleNext = () => setStep(2);
-  const handleBack = () => setStep(1);
+  async function copy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard");
+    } catch {
+      toast.error("Unable to copy");
+    }
+  }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (readOnlyDemo) return toast.error("Demo mode is read-only.");
+
     setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const payload = new FormData();
+      payload.set("accessKey", accessKey);
+      payload.set("first_name", formData.firstName);
+      payload.set("last_name", formData.lastName);
+      payload.set("email", formData.email);
+      payload.set("phone", formData.phone);
+      payload.set("date_of_birth", formData.dateOfBirth);
+      payload.set("address", formData.address);
+      payload.set("intake_id", formData.intakeId);
+
+      const response = await registerStudentAction(payload);
+      if (!response.ok || !response.studentNumber || !response.email) {
+        toast.error(response.error ?? "Unable to register student.");
+        return;
+      }
+
+      setResult({ studentNumber: response.studentNumber, email: response.email });
+      toast.success("Student registered and invitation sent");
+    } finally {
       setIsSubmitting(false);
-      setIsSuccess(true);
-      toast.success("Student registered successfully");
-    }, 1500);
-  };
+    }
+  }
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard");
-  };
-
-  if (isSuccess) {
+  if (result) {
     return (
-      <div className="max-w-2xl mx-auto py-10">
+      <div className="mx-auto max-w-2xl py-10">
         <Card className="border-success/20 shadow-sm">
-          <CardContent className="pt-10 pb-8 px-8 flex flex-col items-center text-center">
-            <div className="w-16 h-16 bg-success/10 text-success rounded-full flex items-center justify-center mb-6">
-              <CheckCircle className="w-8 h-8" />
+          <CardContent className="flex flex-col items-center px-8 pb-8 pt-10 text-center">
+            <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-success/10 text-success">
+              <CheckCircle className="h-8 w-8" />
             </div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">Registration Successful</h2>
-            <p className="text-text-secondary mb-8">
-              The student profile has been created and enrollment is pending verification.
+            <h2 className="mb-2 text-2xl font-bold text-foreground">Student registered</h2>
+            <p className="mb-8 max-w-md text-text-secondary">
+              The learner has been enrolled and an invitation email was sent. They will set their own password; administrators never need to know it.
             </p>
 
-            <div className="w-full bg-surface-muted rounded-lg p-6 space-y-4 mb-8 text-left border border-border">
+            <div className="mb-8 w-full space-y-4 text-left">
               <div>
-                <Label className="text-text-muted mb-1 block">Student ID</Label>
-                <div className="flex items-center justify-between bg-background border border-border rounded-md px-3 py-2">
-                  <span className="font-mono font-medium text-foreground">NPU-STU-202600046</span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard("NPU-STU-202600046")}>
-                    <Copy className="h-3.5 w-3.5 text-text-secondary" />
-                  </Button>
+                <Label className="mb-1 block text-text-muted">Student Number</Label>
+                <div className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
+                  <span className="font-mono font-medium text-foreground">{result.studentNumber}</span>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copy(result.studentNumber)}><Copy className="h-3.5 w-3.5" /></Button>
                 </div>
               </div>
-              
               <div>
-                <Label className="text-text-muted mb-1 block">Temporary Email</Label>
-                <div className="flex items-center justify-between bg-background border border-border rounded-md px-3 py-2">
-                  <span className="font-medium text-foreground">{formData.email || "student@example.com"}</span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(formData.email || "student@example.com")}>
-                    <Copy className="h-3.5 w-3.5 text-text-secondary" />
-                  </Button>
+                <Label className="mb-1 block text-text-muted">Invitation Email</Label>
+                <div className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
+                  <span className="font-medium text-foreground">{result.email}</span>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copy(result.email)}><Copy className="h-3.5 w-3.5" /></Button>
                 </div>
-              </div>
-
-              <div>
-                <Label className="text-text-muted mb-1 block">Temporary Password</Label>
-                <div className="flex items-center justify-between bg-background border border-border rounded-md px-3 py-2">
-                  <span className="font-mono font-medium text-foreground">npU$8x9L2</span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard("npU$8x9L2")}>
-                    <Copy className="h-3.5 w-3.5 text-text-secondary" />
-                  </Button>
-                </div>
-                <p className="text-xs text-text-muted mt-2 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" /> User will be forced to change password on first login.
-                </p>
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-text-muted"><Mail className="h-3.5 w-3.5" /> The invite opens Nenasala&apos;s password setup page.</p>
               </div>
             </div>
 
-            <div className="flex gap-4 w-full">
-              <Button variant="outline" className="flex-1" onClick={() => {
-                setStep(1);
-                setIsSuccess(false);
-                setFormData({firstName: "", lastName: "", email: "", phone: "", course: "", intake: "", amount: ""});
-              }}>
+            <div className="flex w-full gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setResult(null);
+                  setStep(1);
+                  setFormData({ firstName: "", lastName: "", email: "", phone: "", dateOfBirth: "", address: "", intakeId: "" });
+                }}
+              >
                 Register Another
               </Button>
-              <Button className="flex-1" onClick={() => navigate("/students")}>
-                View Directory
-              </Button>
+              <Button className="flex-1" onClick={() => router.push(`/internal/${accessKey}/students`)}>View Directory</Button>
             </div>
           </CardContent>
         </Card>
@@ -112,12 +125,10 @@ export default function StudentRegistration() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center gap-4">
-        <Link to="/students">
-          <Button variant="ghost" size="icon">
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
+        <Link href={`/internal/${accessKey}/students`}>
+          <Button variant="ghost" size="icon"><ChevronLeft className="h-5 w-5" /></Button>
         </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Register New Student</h1>
@@ -125,124 +136,86 @@ export default function StudentRegistration() {
         </div>
       </div>
 
-      <div className="flex gap-2 mb-6">
-        <div className={`h-2 flex-1 rounded-full ${step >= 1 ? "bg-brand-primary" : "bg-surface-muted"}`}></div>
-        <div className={`h-2 flex-1 rounded-full ${step >= 2 ? "bg-brand-primary" : "bg-surface-muted"}`}></div>
+      {readOnlyDemo && (
+        <div className="rounded-[var(--radius-md)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
+          Demo mode is read-only. Sign in with a real administrator account to register a student.
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <div className={`h-2 flex-1 rounded-full ${step >= 1 ? "bg-brand-primary" : "bg-surface-muted"}`} />
+        <div className={`h-2 flex-1 rounded-full ${step >= 2 ? "bg-brand-primary" : "bg-surface-muted"}`} />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>{step === 1 ? "Student Information" : "Academic & Enrollment"}</CardTitle>
+          <CardTitle>{step === 1 ? "Student Information" : "Enrollment"}</CardTitle>
           <CardDescription>
-            {step === 1 
-              ? "Enter personal details to create the student profile." 
-              : "Select course intake and upload payment verification."}
+            {step === 1 ? "Create the learner profile." : "Choose the intake that controls the student's class access."}
           </CardDescription>
         </CardHeader>
-        <form onSubmit={step === 1 ? (e) => { e.preventDefault(); handleNext(); } : handleSubmit}>
+
+        <form onSubmit={step === 1 ? (event) => { event.preventDefault(); setStep(2); } : handleSubmit}>
           <CardContent className="space-y-6">
-            {step === 1 && (
+            {step === 1 ? (
               <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" required value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} placeholder="akon" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" required value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} placeholder="Perera" />
-                  </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2"><Label htmlFor="first-name">First Name</Label><Input id="first-name" required value={formData.firstName} onChange={(event) => setFormData({ ...formData, firstName: event.target.value })} /></div>
+                  <div className="space-y-2"><Label htmlFor="last-name">Last Name</Label><Input id="last-name" required value={formData.lastName} onChange={(event) => setFormData({ ...formData, lastName: event.target.value })} /></div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="akon@example.com" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" type="tel" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+94 77 123 4567" />
-                  </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2"><Label htmlFor="student-email">Email Address</Label><Input id="student-email" type="email" required value={formData.email} onChange={(event) => setFormData({ ...formData, email: event.target.value })} /></div>
+                  <div className="space-y-2"><Label htmlFor="student-phone">Phone Number</Label><Input id="student-phone" type="tel" value={formData.phone} onChange={(event) => setFormData({ ...formData, phone: event.target.value })} /></div>
                 </div>
-                <div className="space-y-2 border-t border-border pt-4 mt-4">
-                  <h4 className="text-sm font-medium mb-2">Guardian Information (Optional)</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="gname">Guardian Name</Label>
-                      <Input id="gname" placeholder="Name" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="gphone">Guardian Phone</Label>
-                      <Input id="gphone" placeholder="Phone" />
-                    </div>
-                  </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2"><Label htmlFor="student-dob">Date of Birth</Label><Input id="student-dob" type="date" value={formData.dateOfBirth} onChange={(event) => setFormData({ ...formData, dateOfBirth: event.target.value })} /></div>
+                  <div className="space-y-2"><Label htmlFor="student-address">Address</Label><Input id="student-address" value={formData.address} onChange={(event) => setFormData({ ...formData, address: event.target.value })} /></div>
                 </div>
               </>
-            )}
-
-            {step === 2 && (
+            ) : (
               <>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="course">Programme / Course</Label>
-                    <select 
-                      id="course" 
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-primary"
-                      required
-                      value={formData.course}
-                      onChange={e => setFormData({...formData, course: e.target.value})}
-                    >
-                      <option value="">Select a course...</option>
-                      <option value="wd">Web Development Bootcamp</option>
-                      <option value="ds">Data Science Fundamentals</option>
-                      <option value="gd">Graphic Design Masterclass</option>
-                    </select>
+                {intakes.length === 0 ? (
+                  <div className="rounded-[var(--radius-md)] border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
+                    <div className="flex gap-2"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><p>Create an intake before registering students. Enrollment is what determines which classes a student can access.</p></div>
                   </div>
+                ) : (
                   <div className="space-y-2">
-                    <Label htmlFor="intake">Intake Batch</Label>
-                    <select 
-                      id="intake" 
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-primary"
+                    <Label htmlFor="student-intake">Intake</Label>
+                    <select
+                      id="student-intake"
                       required
-                      value={formData.intake}
-                      onChange={e => setFormData({...formData, intake: e.target.value})}
+                      value={formData.intakeId}
+                      onChange={(event) => setFormData({ ...formData, intakeId: event.target.value })}
+                      className="flex h-10 w-full rounded-[var(--radius-sm)] border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-brand-primary/30"
                     >
-                      <option value="">Select active intake...</option>
-                      <option value="wd-26-2">WD-26.2 (Starts Sep 2026)</option>
-                      <option value="wd-26-3">WD-26.3 (Starts Nov 2026)</option>
+                      <option value="">Select intake</option>
+                      {intakes.filter((intake) => !["completed", "closed"].includes(intake.status)).map((intake) => (
+                        <option key={intake.id} value={intake.id}>{intake.programme_name} — {intake.name}</option>
+                      ))}
                     </select>
+                    <p className="text-xs text-text-muted">The learner automatically receives the classes attached to this intake.</p>
                   </div>
-                </div>
+                )}
 
-                <div className="space-y-4 border-t border-border pt-6 mt-6">
-                  <h4 className="text-sm font-medium">Payment Verification</h4>
-                  <div className="space-y-2">
-                    <Label htmlFor="amount">Registration Amount Paid (LKR)</Label>
-                    <Input id="amount" type="number" required placeholder="e.g. 5000" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Payment Slip / Receipt</Label>
-                    <div className="border-2 border-dashed border-border rounded-lg p-8 flex flex-col items-center justify-center text-center hover:bg-surface-muted/50 transition-colors cursor-pointer">
-                      <Upload className="h-8 w-8 text-text-muted mb-4" />
-                      <p className="text-sm font-medium text-foreground">Click to upload or drag and drop</p>
-                      <p className="text-xs text-text-muted mt-1">SVG, PNG, JPG or PDF (max. 5MB)</p>
-                    </div>
-                  </div>
+                <div className="rounded-[var(--radius-md)] border border-border bg-surface-muted/50 p-4">
+                  <p className="font-medium text-foreground">Secure account setup</p>
+                  <p className="mt-1 text-sm text-text-secondary">Nenasala will send an invitation email. The student chooses their password privately; no temporary password is shown to administrators.</p>
                 </div>
               </>
             )}
           </CardContent>
+
           <CardFooter className="flex justify-between border-t border-border p-6">
             {step === 1 ? (
               <>
-                <Button type="button" variant="ghost" onClick={() => navigate("/students")}>Cancel</Button>
+                <Button type="button" variant="ghost" onClick={() => router.push(`/internal/${accessKey}/students`)}>Cancel</Button>
                 <Button type="submit">Continue to Enrollment</Button>
               </>
             ) : (
               <>
-                <Button type="button" variant="outline" onClick={handleBack}>Back</Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Registering..." : "Complete Registration"}
+                <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
+                <Button type="submit" disabled={isSubmitting || readOnlyDemo || intakes.length === 0 || !formData.intakeId}>
+                  {isSubmitting ? "Registering..." : "Register & Send Invite"}
                 </Button>
               </>
             )}

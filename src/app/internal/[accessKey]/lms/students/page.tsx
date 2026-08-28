@@ -1,10 +1,9 @@
-import { AdminPlaceholder } from "@/components/admin/AdminPlaceholder";
+import StudentsList from "@/features/admin/pages/admin/StudentsList";
+import { getAdminStudents } from "@/lib/services/students";
+import { hasValidDemoSession, isAdminDemoEnabled } from "@/lib/demo/session";
 
-export default function Page() {
-  return (
-    <AdminPlaceholder
-      title="LMS Students"
-      description="Review enrolled learners, course access and learning activity from the LMS workspace."
-    />
-  );
+export default async function Page({ params }: { params: Promise<{ accessKey: string }> }) {
+  const { accessKey } = await params;
+  const [students, demo] = await Promise.all([getAdminStudents(), hasValidDemoSession()]);
+  return <StudentsList students={students} accessKey={accessKey} readOnlyDemo={isAdminDemoEnabled() && demo} />;
 }
