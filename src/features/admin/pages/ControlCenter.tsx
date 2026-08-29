@@ -38,7 +38,7 @@ const portals = [
     title: "INSTRUCTOR PORTAL",
     description: "Instructor tools, grading and class management.",
     icon: Presentation,
-    path: "/instructors",
+    path: "/instructor-portal",
     active: true,
   },
 ];

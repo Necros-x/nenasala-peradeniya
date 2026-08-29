@@ -21,6 +21,7 @@ import {
   MessagesSquare,
   UserPlus,
   ArrowLeft,
+  Presentation,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { Button } from "@/features/admin/components/ui/button";
@@ -48,6 +49,7 @@ const navGroups = [
     items: [
       { label: "Students", path: "/students", icon: Users },
       { label: "Instructors", path: "/instructors", icon: Briefcase },
+      { label: "Instructor Portal", path: "/instructor-portal", icon: Presentation },
       { label: "Staff & Admin", path: "/staff", icon: UserPlus },
     ],
   },
