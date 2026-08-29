@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { Notification } from "@/features/student/types";
+import { syncCurrentStudentAnnouncementNotifications } from "@/lib/services/announcements";
 import { createClient } from "@/lib/supabase/server";
 
 const NOTIFICATION_COLUMNS = "id,title,message,type,link,read_at,created_at" as const;
@@ -11,6 +12,8 @@ export async function getCurrentStudentNotifications(): Promise<Notification[]> 
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) return [];
+
+  await syncCurrentStudentAnnouncementNotifications();
 
   const { data, error } = await supabase
     .from("notifications")

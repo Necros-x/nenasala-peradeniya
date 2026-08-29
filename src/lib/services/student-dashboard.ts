@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentStudentAnnouncements, type StudentAnnouncementRecord } from "@/lib/services/announcements";
 import { getCurrentStudentAssessmentSummary, type StudentAssessmentResult } from "@/lib/services/student-assessments";
 import { getCurrentStudentCourses } from "@/lib/services/student-courses";
 import { getCurrentStudentRecordings, getCurrentStudentSchedule } from "@/lib/services/student-media";
@@ -11,6 +12,7 @@ export type StudentDashboardData = {
   courses: Course[];
   upcomingEvents: CalendarEvent[];
   recentResults: StudentAssessmentResult[];
+  announcements: StudentAnnouncementRecord[];
   completedLessons: number;
   totalLessons: number;
   completedRecordings: number;
@@ -26,6 +28,7 @@ function emptyDashboard(): StudentDashboardData {
     courses: [],
     upcomingEvents: [],
     recentResults: [],
+    announcements: [],
     completedLessons: 0,
     totalLessons: 0,
     completedRecordings: 0,
@@ -43,12 +46,13 @@ export async function getCurrentStudentDashboard(): Promise<StudentDashboardData
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) return emptyDashboard();
 
-  const [profileResult, courses, schedule, recordings, assessments] = await Promise.all([
+  const [profileResult, courses, schedule, recordings, assessments, announcements] = await Promise.all([
     supabase.from("profiles").select("full_name").eq("id", userData.user.id).maybeSingle(),
     getCurrentStudentCourses(),
     getCurrentStudentSchedule(),
     getCurrentStudentRecordings(),
     getCurrentStudentAssessmentSummary(),
+    getCurrentStudentAnnouncements(3),
   ]);
 
   if (profileResult.error) {
@@ -77,6 +81,7 @@ export async function getCurrentStudentDashboard(): Promise<StudentDashboardData
     courses,
     upcomingEvents,
     recentResults: assessments.recentResults,
+    announcements,
     completedLessons,
     totalLessons,
     completedRecordings,

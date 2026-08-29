@@ -17,6 +17,7 @@ import { Badge } from "@/features/student/components/ui/Badge";
 import { Button } from "@/features/student/components/ui/Button";
 import { Card } from "@/features/student/components/ui/Card";
 import { Progress } from "@/features/student/components/ui/Progress";
+import DashboardAnnouncements from "@/features/student/components/dashboard/DashboardAnnouncements";
 import type { Course } from "@/features/student/types";
 import type { StudentDashboardData } from "@/lib/services/student-dashboard";
 
@@ -337,12 +338,7 @@ export default function RealDashboard({ data }: { data: StudentDashboardData }) 
             </Card>
           </section>
 
-          <section>
-            <h2 className="mb-4 text-xl font-bold text-[var(--color-text-primary)]">Announcements</h2>
-            <Card className="p-6 text-center">
-              <p className="text-sm text-[var(--color-text-secondary)]">No announcements yet. Important course updates will appear here.</p>
-            </Card>
-          </section>
+          <DashboardAnnouncements announcements={data.announcements} />
         </div>
       </div>
     </div>

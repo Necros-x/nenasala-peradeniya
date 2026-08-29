@@ -1,10 +1,21 @@
-import { AdminPlaceholder } from "@/components/admin/AdminPlaceholder";
+import AnnouncementsManager from "@/features/admin/pages/lms/AnnouncementsManager";
+import { hasValidDemoSession, isAdminDemoEnabled } from "@/lib/demo/session";
+import { getAdminAnnouncementOptions, getAdminAnnouncements } from "@/lib/services/announcements";
 
-export default function Page() {
+export default async function Page({ params }: { params: Promise<{ accessKey: string }> }) {
+  const { accessKey } = await params;
+  const [announcements, options, demo] = await Promise.all([
+    getAdminAnnouncements(),
+    getAdminAnnouncementOptions(),
+    hasValidDemoSession(),
+  ]);
+
   return (
-    <AdminPlaceholder
-      title="LMS Announcements"
-      description="Publish learning announcements to courses, intakes or selected students."
+    <AnnouncementsManager
+      announcements={announcements}
+      options={options}
+      accessKey={accessKey}
+      readOnlyDemo={isAdminDemoEnabled() && demo}
     />
   );
 }

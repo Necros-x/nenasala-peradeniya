@@ -1,2 +1,14 @@
 import Announcements from "@/features/student/pages/announcements/Announcements";
-export default function Page() { return <Announcements />; }
+import RealAnnouncements from "@/features/student/pages/announcements/RealAnnouncements";
+import { hasRealStudentSession } from "@/lib/auth/guards";
+import { hasValidDemoSession } from "@/lib/demo/session";
+import { getCurrentStudentAnnouncements } from "@/lib/services/announcements";
+
+export default async function Page() {
+  const localPreview = process.env.NODE_ENV !== "production" && process.env.LOCAL_UI_BYPASS === "true";
+  const [realStudent, demo] = await Promise.all([hasRealStudentSession(), hasValidDemoSession()]);
+  if (!realStudent && (demo || localPreview)) return <Announcements />;
+
+  const announcements = await getCurrentStudentAnnouncements();
+  return <RealAnnouncements announcements={announcements} />;
+}
