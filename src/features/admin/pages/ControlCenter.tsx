@@ -39,16 +39,13 @@ const portals = [
     description: "Instructor tools, grading and class management.",
     icon: Presentation,
     path: "/instructors",
-    active: false,
+    active: true,
   },
 ];
 
 export default function ControlCenter() {
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-background text-foreground">
-      <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-[var(--color-primary-soft)] blur-3xl opacity-70" />
-      <div className="pointer-events-none absolute -bottom-28 -left-24 h-96 w-96 rounded-full bg-[var(--color-primary-muted)] blur-3xl opacity-40" />
-
       <header className="absolute left-0 top-0 z-10 flex h-16 w-full items-center justify-between border-b border-border bg-background/70 px-4 backdrop-blur-xl md:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <img
