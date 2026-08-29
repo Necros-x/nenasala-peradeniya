@@ -199,7 +199,14 @@ export function LoginPage() {
         if (signInError) throw signInError;
       }
 
-      router.replace("/student/dashboard");
+      let destination = "/student/dashboard";
+      if (!isSignUp) {
+        const { data: roleRows } = await supabase.from("user_roles").select("role");
+        const roles = new Set((roleRows ?? []).map((row) => row.role));
+        if (roles.has("instructor")) destination = "/instructor/dashboard";
+      }
+
+      router.replace(destination);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to continue.");

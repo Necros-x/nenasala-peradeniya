@@ -34,6 +34,25 @@ export async function hasRealStudentSession() {
   return Boolean(identity?.roles.includes("student"));
 }
 
+export async function hasRealInstructorSession() {
+  const identity = await getVerifiedIdentity();
+  return Boolean(identity?.roles.includes("instructor"));
+}
+
+export async function requireInstructor() {
+  const identity = await getVerifiedIdentity();
+  if (!identity) redirect("/login");
+  if (!identity.roles.includes("instructor")) redirect("/");
+  return identity;
+}
+
+export async function requireRealInstructor() {
+  const identity = await getVerifiedIdentity();
+  if (!identity) return null;
+  if (!identity.roles.includes("instructor")) return null;
+  return identity;
+}
+
 export async function requireStudent() {
   if (isLocalUiBypass()) return { id: "local-ui-preview", roles: ["student"] as PlatformRole[] };
   if (await hasValidDemoSession()) return { id: "demo-preview", roles: ["student"] as PlatformRole[] };

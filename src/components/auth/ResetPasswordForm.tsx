@@ -26,9 +26,13 @@ export function ResetPasswordForm() {
       const supabase = createClient();
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw updateError;
+      const { data: roleRows } = await supabase.from("user_roles").select("role");
+      const roles = new Set((roleRows ?? []).map((row) => row.role));
+      const destination = roles.has("instructor") ? "/instructor/dashboard" : "/student/dashboard";
+
       setSuccess(true);
       window.setTimeout(() => {
-        router.replace("/student/dashboard");
+        router.replace(destination);
         router.refresh();
       }, 900);
     } catch (err) {
@@ -45,7 +49,7 @@ export function ResetPasswordForm() {
         <Card className="shadow-[var(--shadow-card)]">
           <CardHeader>
             <CardTitle>Set a new password</CardTitle>
-            <CardDescription>Choose a strong password for your student account.</CardDescription>
+            <CardDescription>Choose a strong password for your Nenasala account.</CardDescription>
           </CardHeader>
           <CardContent>
             {success ? (
