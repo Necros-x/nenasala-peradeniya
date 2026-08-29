@@ -10,9 +10,11 @@ import type { AdminAssignmentRecord, AdminSubmissionRecord } from "@/lib/service
 export default function InstructorAssignments({
   assignments,
   submissions,
+  accessKey,
 }: {
   assignments: AdminAssignmentRecord[];
   submissions: AdminSubmissionRecord[];
+  accessKey?: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -21,6 +23,8 @@ export default function InstructorAssignments({
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     formData.set("submission_id", submissionId);
+    if (accessKey) formData.set("accessKey", accessKey);
+
     startTransition(async () => {
       const result = await gradeSubmissionAction(formData);
       if (!result.ok) {
@@ -34,8 +38,11 @@ export default function InstructorAssignments({
 
   function enableResubmission(submissionId: string) {
     if (!window.confirm("Enable exactly one additional submission attempt for this student?")) return;
+
     const formData = new FormData();
     formData.set("submission_id", submissionId);
+    if (accessKey) formData.set("accessKey", accessKey);
+
     startTransition(async () => {
       const result = await enableResubmissionAction(formData);
       if (!result.ok) {
@@ -51,7 +58,7 @@ export default function InstructorAssignments({
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-text-primary">Assignments & Grading</h1>
-        <p className="mt-1 text-text-secondary">Review submissions from your assigned classes. Assignment creation remains admin-controlled.</p>
+        <p className="mt-1 text-text-secondary">Review submissions from the classes available to this portal.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -112,6 +119,7 @@ export default function InstructorAssignments({
                       />
                       <span className="text-sm font-semibold text-text-secondary">/ {submission.max_points}</span>
                     </div>
+
                     <textarea
                       name="feedback"
                       rows={3}
@@ -119,6 +127,7 @@ export default function InstructorAssignments({
                       placeholder="Feedback for the student"
                       className="mt-3 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:ring-1 focus:ring-brand-primary"
                     />
+
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button disabled={pending} type="submit" className="rounded-md bg-brand-primary px-4 py-2 text-sm font-bold text-[var(--color-static-white)] hover:bg-brand-primary-hover disabled:opacity-50">
                         Save grade

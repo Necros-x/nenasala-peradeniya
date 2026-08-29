@@ -12,7 +12,13 @@ function fmt(value: string) {
   }).format(new Date(value));
 }
 
-export default function InstructorDashboard({ data }: { data: AwaitedReturn }) {
+export default function InstructorDashboard({
+  data,
+  basePath = "/instructor",
+}: {
+  data: AwaitedReturn;
+  basePath?: string;
+}) {
   const firstName = data.profile?.full_name.split(/\s+/)[0] ?? "Instructor";
   const stats = [
     { label: "Assigned Classes", value: data.classes.length, icon: BookOpen },
@@ -24,9 +30,9 @@ export default function InstructorDashboard({ data }: { data: AwaitedReturn }) {
   return (
     <div className="space-y-7">
       <div>
-        <p className="text-sm font-bold uppercase tracking-[0.15em] text-brand-primary">Lecturer Dashboard</p>
+        <p className="text-sm font-bold uppercase tracking-[0.15em] text-brand-primary">Instructor Dashboard</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-text-primary">Welcome, {firstName}</h1>
-        <p className="mt-1 text-text-secondary">Your classes, grading queue and upcoming sessions in one place.</p>
+        <p className="mt-1 text-text-secondary">Classes, grading queue and upcoming sessions in one place.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -49,14 +55,15 @@ export default function InstructorDashboard({ data }: { data: AwaitedReturn }) {
           <div className="h-full rounded-[calc(var(--radius-lg)-4px)] bg-surface-muted p-5">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-text-primary">Grading queue</h2>
-              <Link href="/instructor/assignments" className="text-sm font-semibold text-brand-primary hover:underline">Open assignments</Link>
+              <Link href={`${basePath}/assignments`} className="text-sm font-semibold text-brand-primary hover:underline">Open assignments</Link>
             </div>
+
             {data.pendingSubmissions.length === 0 ? (
               <p className="mt-5 text-sm text-text-secondary">No submitted assignments are waiting for grading.</p>
             ) : (
               <div className="mt-4 space-y-2">
                 {data.pendingSubmissions.slice(0, 5).map((submission) => (
-                  <Link key={submission.id} href="/instructor/assignments" className="block rounded-md border border-border bg-background p-3 hover:border-brand-primary">
+                  <Link key={submission.id} href={`${basePath}/assignments`} className="block rounded-md border border-border bg-background p-3 hover:border-brand-primary">
                     <p className="font-semibold text-text-primary">{submission.student_name}</p>
                     <p className="mt-1 text-xs text-text-secondary">{submission.assignment_title} · {submission.course_title}</p>
                   </Link>
@@ -72,8 +79,9 @@ export default function InstructorDashboard({ data }: { data: AwaitedReturn }) {
               <h2 className="flex items-center gap-2 text-lg font-bold text-text-primary">
                 <CalendarClock className="h-5 w-5 text-brand-primary" /> Upcoming sessions
               </h2>
-              <Link href="/instructor/recordings" className="text-sm font-semibold text-brand-primary hover:underline">Media</Link>
+              <Link href={`${basePath}/recordings`} className="text-sm font-semibold text-brand-primary hover:underline">Media</Link>
             </div>
+
             {data.upcomingSessions.length === 0 ? (
               <p className="mt-5 text-sm text-text-secondary">No upcoming live sessions are scheduled.</p>
             ) : (

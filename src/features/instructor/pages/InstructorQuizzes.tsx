@@ -10,18 +10,23 @@ import type { AdminQuizAttemptRecord, AdminQuizRecord } from "@/lib/services/qui
 export default function InstructorQuizzes({
   quizzes,
   attempts,
+  accessKey,
 }: {
   quizzes: AdminQuizRecord[];
   attempts: AdminQuizAttemptRecord[];
+  accessKey?: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   function retry(attempt: AdminQuizAttemptRecord) {
     if (!window.confirm(`Enable one additional attempt for ${attempt.student_name}?`)) return;
+
     const formData = new FormData();
     formData.set("quiz_id", attempt.quiz_id);
     formData.set("student_id", attempt.student_id);
+    if (accessKey) formData.set("accessKey", accessKey);
+
     startTransition(async () => {
       const result = await enableQuizRetryAction(formData);
       if (!result.ok) {
@@ -48,7 +53,7 @@ export default function InstructorQuizzes({
       </div>
 
       {quizzes.length === 0 ? (
-        <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-8 text-center text-text-secondary">No quizzes are available for your classes.</div>
+        <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-8 text-center text-text-secondary">No quizzes are available for the classes in this portal.</div>
       ) : (
         <div className="space-y-6">
           {quizzes.map((quiz) => {

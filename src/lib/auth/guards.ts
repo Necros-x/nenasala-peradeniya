@@ -9,15 +9,13 @@ function isLocalUiBypass() {
   return process.env.NODE_ENV !== "production" && process.env.LOCAL_UI_BYPASS === "true";
 }
 
-async function getVerifiedIdentity() {
+export async function getCurrentIdentity() {
   const supabase = await createClient();
   if (!supabase) return null;
 
-  // getUser() validates the JWT with Supabase rather than trusting cookie contents.
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return null;
 
-  // Roles now come from the database rather than user-editable metadata.
   const { data: rows, error: roleError } = await supabase
     .from("user_roles")
     .select("role")
@@ -30,34 +28,20 @@ async function getVerifiedIdentity() {
 }
 
 export async function hasRealStudentSession() {
-  const identity = await getVerifiedIdentity();
+  const identity = await getCurrentIdentity();
   return Boolean(identity?.roles.includes("student"));
 }
 
 export async function hasRealInstructorSession() {
-  const identity = await getVerifiedIdentity();
+  const identity = await getCurrentIdentity();
   return Boolean(identity?.roles.includes("instructor"));
-}
-
-export async function requireInstructor() {
-  const identity = await getVerifiedIdentity();
-  if (!identity) redirect("/login");
-  if (!identity.roles.includes("instructor")) redirect("/");
-  return identity;
-}
-
-export async function requireRealInstructor() {
-  const identity = await getVerifiedIdentity();
-  if (!identity) return null;
-  if (!identity.roles.includes("instructor")) return null;
-  return identity;
 }
 
 export async function requireStudent() {
   if (isLocalUiBypass()) return { id: "local-ui-preview", roles: ["student"] as PlatformRole[] };
   if (await hasValidDemoSession()) return { id: "demo-preview", roles: ["student"] as PlatformRole[] };
 
-  const identity = await getVerifiedIdentity();
+  const identity = await getCurrentIdentity();
   if (!identity) redirect("/login");
   if (!identity.roles.includes("student")) redirect("/");
   return identity;
@@ -69,19 +53,51 @@ export async function requireAdmin(loginPath: string) {
     return { id: "demo-preview", roles: ["super_admin"] as PlatformRole[] };
   }
 
-  const identity = await getVerifiedIdentity();
+  const identity = await getCurrentIdentity();
   if (!identity) redirect(loginPath);
   if (!identity.roles.some((role) => role === "admin" || role === "super_admin")) redirect("/");
   return identity;
 }
 
-/**
- * Strict guard for mutations. Demo/local preview sessions never satisfy this.
- * This prevents a UI bypass from becoming a database-write bypass.
- */
 export async function requireRealAdmin() {
-  const identity = await getVerifiedIdentity();
+  const identity = await getCurrentIdentity();
   if (!identity) return null;
   if (!identity.roles.some((role) => role === "admin" || role === "super_admin")) return null;
   return identity;
+}
+
+export async function requireInternalAccess(loginPath: string) {
+  if (isLocalUiBypass()) return { id: "local-ui-preview", roles: ["super_admin"] as PlatformRole[] };
+  if (isAdminDemoEnabled() && (await hasValidDemoSession())) {
+    return { id: "demo-preview", roles: ["super_admin"] as PlatformRole[] };
+  }
+
+  const identity = await getCurrentIdentity();
+  if (!identity) redirect(loginPath);
+
+  const allowed = identity.roles.some(
+    (role) => role === "instructor" || role === "admin" || role === "super_admin"
+  );
+  if (!allowed) redirect("/");
+  return identity;
+}
+
+export async function requireInstructorPortal(loginPath: string) {
+  const identity = await requireInternalAccess(loginPath);
+
+  const allowed = identity.roles.some(
+    (role) => role === "instructor" || role === "super_admin"
+  );
+  if (!allowed) redirect("/");
+  return identity;
+}
+
+export async function requireRealInstructorPortalActor() {
+  const identity = await getCurrentIdentity();
+  if (!identity) return null;
+
+  const allowed = identity.roles.some(
+    (role) => role === "instructor" || role === "super_admin"
+  );
+  return allowed ? identity : null;
 }

@@ -2,7 +2,7 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { requireRealInstructor } from "@/lib/auth/guards";
+import { getCurrentIdentity } from "@/lib/auth/guards";
 import { getAdminClasses, type ClassRecord } from "@/lib/services/classes";
 import { getAdminStudents, type AdminStudentRecord } from "@/lib/services/students";
 import {
@@ -71,20 +71,52 @@ function firstRelation<T>(value: T | T[] | null | undefined): T | null {
   return value ?? null;
 }
 
-async function instructorId() {
-  const identity = await requireRealInstructor();
-  return identity?.id ?? null;
+async function portalActor() {
+  const identity = await getCurrentIdentity();
+  if (!identity) return null;
+
+  const isSuperAdmin = identity.roles.includes("super_admin");
+  const isInstructor = identity.roles.includes("instructor");
+
+  if (!isSuperAdmin && !isInstructor) return null;
+
+  return {
+    id: identity.id,
+    isSuperAdmin,
+    isInstructor,
+  };
 }
 
 export async function getCurrentInstructorProfile(): Promise<InstructorProfileRecord | null> {
-  const id = await instructorId();
+  const actor = await portalActor();
+  if (!actor) return null;
+
+  if (actor.isSuperAdmin) {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("profiles")
+      .select("full_name,email,avatar_url")
+      .eq("id", actor.id)
+      .maybeSingle();
+
+    if (error) console.error("Unable to load Super Admin profile:", error.message);
+
+    return {
+      id: actor.id,
+      full_name: data?.full_name ?? "Super Administrator",
+      email: data?.email ?? null,
+      avatar_url: data?.avatar_url ?? null,
+      professional_title: "Super Administrator",
+    };
+  }
+
   const supabase = await createClient();
-  if (!id || !supabase) return null;
+  if (!supabase) return null;
 
   const { data, error } = await supabase
     .from("instructor_profiles")
     .select("profile_id,professional_title,profiles(full_name,email,avatar_url)")
-    .eq("profile_id", id)
+    .eq("profile_id", actor.id)
     .maybeSingle();
 
   if (error || !data) {
@@ -93,8 +125,9 @@ export async function getCurrentInstructorProfile(): Promise<InstructorProfileRe
   }
 
   const profile = firstRelation((data as any).profiles as any) as any;
+
   return {
-    id,
+    id: actor.id,
     full_name: profile?.full_name ?? "Instructor",
     email: profile?.email ?? null,
     avatar_url: profile?.avatar_url ?? null,
@@ -103,16 +136,25 @@ export async function getCurrentInstructorProfile(): Promise<InstructorProfileRe
 }
 
 export async function getInstructorClasses(): Promise<ClassRecord[]> {
-  const id = await instructorId();
-  if (!id) return [];
+  const actor = await portalActor();
+  if (!actor) return [];
+
   const classes = await getAdminClasses();
-  return classes.filter((row) => row.instructor_id === id);
+  if (actor.isSuperAdmin) return classes;
+
+  return classes.filter((row) => row.instructor_id === actor.id);
 }
 
 export async function getInstructorStudents(): Promise<AdminStudentRecord[]> {
+  const actor = await portalActor();
+  if (!actor) return [];
+
+  if (actor.isSuperAdmin) return getAdminStudents();
+
   const classes = await getInstructorClasses();
   const intakeIds = new Set(classes.map((row) => row.intake_id));
   if (intakeIds.size === 0) return [];
+
   const students = await getAdminStudents();
   return students.filter((student) => Boolean(student.intake_id && intakeIds.has(student.intake_id)));
 }
@@ -121,17 +163,23 @@ export async function getInstructorAssignmentsData(): Promise<{
   assignments: AdminAssignmentRecord[];
   submissions: AdminSubmissionRecord[];
 }> {
-  const classes = await getInstructorClasses();
-  const classIds = new Set(classes.map((row) => row.id));
-  if (classIds.size === 0) return { assignments: [], submissions: [] };
+  const actor = await portalActor();
+  if (!actor) return { assignments: [], submissions: [] };
 
   const [assignments, submissions] = await Promise.all([
     getAdminAssignments(),
     getAdminAssignmentSubmissions(),
   ]);
 
+  if (actor.isSuperAdmin) return { assignments, submissions };
+
+  const classes = await getInstructorClasses();
+  const classIds = new Set(classes.map((row) => row.id));
+  if (classIds.size === 0) return { assignments: [], submissions: [] };
+
   const allowedAssignments = assignments.filter((row) => classIds.has(row.class_id));
   const assignmentIds = new Set(allowedAssignments.map((row) => row.id));
+
   return {
     assignments: allowedAssignments,
     submissions: submissions.filter((row) => assignmentIds.has(row.assignment_id)),
@@ -142,16 +190,23 @@ export async function getInstructorQuizzesData(): Promise<{
   quizzes: AdminQuizRecord[];
   attempts: AdminQuizAttemptRecord[];
 }> {
-  const classes = await getInstructorClasses();
-  const classIds = new Set(classes.map((row) => row.id));
-  if (classIds.size === 0) return { quizzes: [], attempts: [] };
+  const actor = await portalActor();
+  if (!actor) return { quizzes: [], attempts: [] };
 
   const [quizzes, attempts] = await Promise.all([
     getAdminQuizzes(),
     getAdminQuizAttempts(),
   ]);
+
+  if (actor.isSuperAdmin) return { quizzes, attempts };
+
+  const classes = await getInstructorClasses();
+  const classIds = new Set(classes.map((row) => row.id));
+  if (classIds.size === 0) return { quizzes: [], attempts: [] };
+
   const allowedQuizzes = quizzes.filter((row) => classIds.has(row.class_id));
   const quizIds = new Set(allowedQuizzes.map((row) => row.id));
+
   return {
     quizzes: allowedQuizzes,
     attempts: attempts.filter((row) => quizIds.has(row.quiz_id)),
@@ -159,10 +214,16 @@ export async function getInstructorQuizzesData(): Promise<{
 }
 
 export async function getInstructorProgress(): Promise<AdminStudentProgressRecord[]> {
+  const actor = await portalActor();
+  if (!actor) return [];
+
+  const progress = await getAdminStudentProgress();
+  if (actor.isSuperAdmin) return progress;
+
   const students = await getInstructorStudents();
   const studentIds = new Set(students.map((row) => row.id));
   if (studentIds.size === 0) return [];
-  const progress = await getAdminStudentProgress();
+
   return progress.filter((row) => studentIds.has(row.student_id));
 }
 
@@ -170,6 +231,7 @@ export async function getInstructorContent(): Promise<InstructorContentCourse[]>
   const classes = await getInstructorClasses();
   const courseMap = new Map(classes.map((row) => [row.course_id, row.course_title]));
   const courseIds = [...courseMap.keys()];
+
   const supabase = await createClient();
   if (!supabase || courseIds.length === 0) return [];
 
@@ -188,6 +250,7 @@ export async function getInstructorContent(): Promise<InstructorContentCourse[]>
 
   const moduleIds = (moduleRows ?? []).map((row) => row.id);
   let lessonRows: any[] = [];
+
   if (moduleIds.length > 0) {
     const { data, error } = await supabase
       .from("lessons")
@@ -196,6 +259,7 @@ export async function getInstructorContent(): Promise<InstructorContentCourse[]>
       .eq("status", "published")
       .order("module_id")
       .order("position");
+
     if (error) console.error("Unable to load instructor lessons:", error.message);
     lessonRows = data ?? [];
   }
@@ -234,16 +298,21 @@ export async function getInstructorMediaData(): Promise<{
   recordings: RecordingRecord[];
   assignments: RecordingAssignmentRecord[];
 }> {
-  const classes = await getInstructorClasses();
-  const classIds = new Set(classes.map((row) => row.id));
-  const courseIds = new Set(classes.map((row) => row.course_id));
-  if (classIds.size === 0) return { sessions: [], recordings: [], assignments: [] };
+  const actor = await portalActor();
+  if (!actor) return { sessions: [], recordings: [], assignments: [] };
 
   const [sessions, recordings, assignments] = await Promise.all([
     getAdminLiveSessions(),
     getAdminRecordings(),
     getAdminRecordingAssignments(),
   ]);
+
+  if (actor.isSuperAdmin) return { sessions, recordings, assignments };
+
+  const classes = await getInstructorClasses();
+  const classIds = new Set(classes.map((row) => row.id));
+  const courseIds = new Set(classes.map((row) => row.course_id));
+  if (classIds.size === 0) return { sessions: [], recordings: [], assignments: [] };
 
   const allowedAssignments = assignments.filter((row) => classIds.has(row.class_id));
   const assignedRecordingIds = new Set(allowedAssignments.map((row) => row.recording_id));
@@ -261,19 +330,27 @@ export async function getInstructorMediaData(): Promise<{
 }
 
 export async function getInstructorAnnouncements(): Promise<InstructorAnnouncementRecord[]> {
-  const id = await instructorId();
+  const actor = await portalActor();
+  if (!actor) return [];
+
   const classes = await getInstructorClasses();
   const classIds = classes.map((row) => row.id);
-  if (!id || classIds.length === 0) return [];
+  if (classIds.length === 0) return [];
 
   const classMap = new Map(classes.map((row) => [row.id, row]));
   const admin = createAdminClient();
-  const { data, error } = await admin
+
+  let query = admin
     .from("announcements")
     .select("id,class_id,title,body,priority,publish_at,created_at")
-    .eq("created_by", id)
     .eq("audience_type", "class")
-    .in("class_id", classIds)
+    .in("class_id", classIds);
+
+  if (!actor.isSuperAdmin) {
+    query = query.eq("created_by", actor.id);
+  }
+
+  const { data, error } = await query
     .order("created_at", { ascending: false })
     .limit(100);
 

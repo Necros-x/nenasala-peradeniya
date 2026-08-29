@@ -14,14 +14,9 @@ import {
   LogOut,
   Menu,
   X,
-  ClipboardList,
-  FileQuestion,
-  Megaphone,
   Award,
-  MessagesSquare,
   UserPlus,
   ArrowLeft,
-  Presentation,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { Button } from "@/features/admin/components/ui/button";
@@ -49,7 +44,6 @@ const navGroups = [
     items: [
       { label: "Students", path: "/students", icon: Users },
       { label: "Instructors", path: "/instructors", icon: Briefcase },
-      { label: "Instructor Portal", path: "/instructor-portal", icon: Presentation },
       { label: "Staff & Admin", path: "/staff", icon: UserPlus },
     ],
   },
@@ -69,6 +63,7 @@ const navGroups = [
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation();
+
   return (
     <>
       <div className="h-20 flex items-center px-5 border-b border-border">
@@ -95,6 +90,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <p className="px-3 mb-2 text-[11px] font-bold tracking-[0.16em] text-text-muted">{group.title}</p>
             {group.items.map((item) => {
               const active = location.pathname === item.path || (item.path !== "/dashboard" && location.pathname.startsWith(item.path));
+
               return (
                 <Link
                   key={item.path}

@@ -199,15 +199,25 @@ export function LoginPage() {
         if (signInError) throw signInError;
       }
 
-      let destination = "/student/dashboard";
       if (!isSignUp) {
         const { data: roleRows } = await supabase.from("user_roles").select("role");
         const roles = new Set((roleRows ?? []).map((row) => row.role));
-        if (roles.has("instructor")) destination = "/instructor/dashboard";
+
+        const isInternalAccount =
+          roles.has("instructor") ||
+          roles.has("admin") ||
+          roles.has("super_admin");
+
+        if (isInternalAccount) {
+          await supabase.auth.signOut();
+          setError("Staff and instructor accounts must use the secure internal access link.");
+          return;
+        }
       }
 
-      router.replace(destination);
+      router.replace("/student/dashboard");
       router.refresh();
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to continue.");
     } finally {

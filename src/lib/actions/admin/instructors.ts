@@ -12,7 +12,7 @@ export type InstructorActionResult = {
   ok: boolean;
   error?: string;
   email?: string;
-  delivery?: "resend" | "supabase";
+  delivery?: "resend";
 };
 
 function text(formData: FormData, key: string) {
@@ -38,6 +38,14 @@ function normaliseOrigin(value: string | null) {
   }
 }
 
+function revalidateInstructorPaths(accessKey: string) {
+  revalidatePath(`/internal/${accessKey}/instructors`);
+  revalidatePath(`/internal/${accessKey}/instructor-portal`);
+  revalidatePath(`/internal/${accessKey}/instructor-portal/dashboard`);
+  revalidatePath(`/internal/${accessKey}/instructor-portal/classes`);
+  revalidatePath(`/internal/${accessKey}/lms/classes`);
+}
+
 export async function registerInstructorAction(formData: FormData): Promise<InstructorActionResult> {
   const accessKey = text(formData, "accessKey");
   if (!isValidAdminAccessKey(accessKey)) return { ok: false, error: "Invalid admin route." };
@@ -57,6 +65,13 @@ export async function registerInstructorAction(formData: FormData): Promise<Inst
   if (fullName.length < 2) return { ok: false, error: "Instructor name is required." };
   if (!/^\S+@\S+\.\S+$/.test(email)) return { ok: false, error: "Enter a valid instructor email." };
 
+  if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
+    return {
+      ok: false,
+      error: "Resend is not configured. Add RESEND_API_KEY and RESEND_FROM_EMAIL before inviting instructors.",
+    };
+  }
+
   let admin;
   try {
     admin = createAdminClient();
@@ -69,7 +84,10 @@ export async function registerInstructorAction(formData: FormData): Promise<Inst
     .select("id")
     .eq("email", email)
     .maybeSingle();
-  if (existingProfile) return { ok: false, error: "An account already exists for that email address." };
+
+  if (existingProfile) {
+    return { ok: false, error: "An account already exists for that email address. Delete the old instructor first or use another email." };
+  }
 
   const requestHeaders = await headers();
   const configuredSite = normaliseOrigin(process.env.NEXT_PUBLIC_SITE_URL ?? null);
@@ -78,37 +96,25 @@ export async function registerInstructorAction(formData: FormData): Promise<Inst
   const forwardedProto = requestHeaders.get("x-forwarded-proto") ?? "https";
   const fallbackOrigin = host ? `${forwardedProto}://${host}` : null;
   const origin = configuredSite ?? requestOrigin ?? fallbackOrigin ?? "http://localhost:3000";
-  const redirectTo = `${origin}/reset-password`;
 
-  const useResend = Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL);
-  let instructorId = "";
-  let actionLink: string | null = null;
-  let delivery: "resend" | "supabase" = useResend ? "resend" : "supabase";
+  const returnTo = `/internal/${accessKey}`;
+  const redirectTo = `${origin}/reset-password?next=${encodeURIComponent(returnTo)}`;
 
-  if (useResend) {
-    const { data, error } = await admin.auth.admin.generateLink({
-      type: "invite",
-      email,
-      options: {
-        redirectTo,
-        data: { full_name: fullName },
-      },
-    });
-    if (error || !data.user) {
-      return { ok: false, error: error?.message ?? "Unable to create the instructor invitation." };
-    }
-    instructorId = data.user.id;
-    actionLink = data.properties?.action_link ?? null;
-  } else {
-    const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "invite",
+    email,
+    options: {
       redirectTo,
       data: { full_name: fullName },
-    });
-    if (error || !data.user) {
-      return { ok: false, error: error?.message ?? "Unable to send the instructor invitation." };
-    }
-    instructorId = data.user.id;
+    },
+  });
+
+  if (error || !data.user) {
+    return { ok: false, error: error?.message ?? "Unable to create the instructor invitation." };
   }
+
+  const instructorId = data.user.id;
+  const actionLink = data.properties?.action_link ?? null;
 
   try {
     const { error: profileError } = await admin
@@ -134,42 +140,161 @@ export async function registerInstructorAction(formData: FormData): Promise<Inst
       });
     if (instructorError) throw instructorError;
 
-    if (useResend) {
-      if (!actionLink) throw new Error("The instructor invite link was not generated.");
-      const template = notificationEmail({
-        name: fullName,
-        title: "Your Nenasala instructor account is ready",
-        message: "You have been invited to the Nenasala Peradeniya lecturer portal. Set your password to access your assigned classes, student progress, grading and learning tools.",
-        actionLabel: "Set up instructor account",
-        actionUrl: actionLink,
-      });
-      const sent = await sendEmail({
-        to: email,
-        subject: template.subject,
-        html: template.html,
-        text: template.text,
-      });
-      if (!sent.ok) throw new Error(sent.error ?? "Unable to send the instructor invitation email.");
-    }
+    if (!actionLink) throw new Error("The instructor invite link was not generated.");
+
+    const template = notificationEmail({
+      name: fullName,
+      title: "Your Nenasala instructor account is ready",
+      message: "You have been invited to the Nenasala Peradeniya Instructor Portal. Set your password, then use the secure internal access link to open your lecturer workspace.",
+      actionLabel: "Set up instructor account",
+      actionUrl: actionLink,
+    });
+
+    const sent = await sendEmail({
+      to: email,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    });
+
+    if (!sent.ok) throw new Error(sent.error ?? "Unable to send the instructor invitation email through Resend.");
 
     await admin.from("audit_logs").insert({
       actor_id: actor.id,
       action: "instructor.registered",
       entity_type: "instructor",
       entity_id: instructorId,
-      metadata: { email, is_public: isPublic, invitation_delivery: delivery },
+      metadata: { email, is_public: isPublic, invitation_delivery: "resend" },
     });
 
-    revalidatePath(`/internal/${accessKey}/instructors`);
-    revalidatePath(`/internal/${accessKey}/lms/classes`);
-
-    return { ok: true, email, delivery };
-  } catch (error) {
-    console.error("Unable to finish instructor registration:", error);
+    revalidateInstructorPaths(accessKey);
+    return { ok: true, email, delivery: "resend" };
+  } catch (finishError) {
+    console.error("Unable to finish instructor registration:", finishError);
     await admin.auth.admin.deleteUser(instructorId).catch(() => undefined);
     return {
       ok: false,
-      error: "The instructor account could not be completed. The partial account was rolled back; please try again.",
+      error: finishError instanceof Error
+        ? finishError.message
+        : "The instructor account could not be completed. The partial account was rolled back.",
     };
   }
+}
+
+export async function updateInstructorAction(formData: FormData): Promise<InstructorActionResult> {
+  const accessKey = text(formData, "accessKey");
+  if (!isValidAdminAccessKey(accessKey)) return { ok: false, error: "Invalid admin route." };
+
+  const actor = await requireRealAdmin();
+  if (!actor) return { ok: false, error: "Demo/preview mode is read-only." };
+
+  const instructorId = text(formData, "instructor_id");
+  const fullName = text(formData, "full_name");
+  const email = text(formData, "email").toLowerCase();
+  const phone = nullableText(formData, "phone");
+  const professionalTitle = nullableText(formData, "professional_title");
+  const bio = nullableText(formData, "bio");
+  const qualifications = csv(text(formData, "qualifications"));
+  const expertise = csv(text(formData, "expertise"));
+  const isPublic = text(formData, "is_public") === "on";
+  const status = text(formData, "status");
+
+  if (!instructorId) return { ok: false, error: "Instructor is required." };
+  if (fullName.length < 2) return { ok: false, error: "Instructor name is required." };
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { ok: false, error: "Enter a valid instructor email." };
+  if (!["active", "inactive", "suspended"].includes(status)) return { ok: false, error: "Invalid account status." };
+
+  const admin = createAdminClient();
+
+  const { data: instructor } = await admin
+    .from("instructor_profiles")
+    .select("profile_id")
+    .eq("profile_id", instructorId)
+    .maybeSingle();
+
+  if (!instructor) return { ok: false, error: "Instructor account could not be found." };
+
+  const { error: authError } = await admin.auth.admin.updateUserById(instructorId, {
+    email,
+    user_metadata: { full_name: fullName },
+  });
+  if (authError) return { ok: false, error: authError.message };
+
+  const { error: profileError } = await admin
+    .from("profiles")
+    .update({ full_name: fullName, email, phone, status })
+    .eq("id", instructorId);
+  if (profileError) return { ok: false, error: profileError.message };
+
+  const { error: instructorError } = await admin
+    .from("instructor_profiles")
+    .update({
+      professional_title: professionalTitle,
+      bio,
+      qualifications,
+      expertise,
+      is_public: isPublic,
+    })
+    .eq("profile_id", instructorId);
+  if (instructorError) return { ok: false, error: instructorError.message };
+
+  await admin.from("audit_logs").insert({
+    actor_id: actor.id,
+    action: "instructor.updated",
+    entity_type: "instructor",
+    entity_id: instructorId,
+    metadata: { email, status, is_public: isPublic },
+  });
+
+  revalidateInstructorPaths(accessKey);
+  return { ok: true, email };
+}
+
+export async function deleteInstructorAction(formData: FormData): Promise<InstructorActionResult> {
+  const accessKey = text(formData, "accessKey");
+  if (!isValidAdminAccessKey(accessKey)) return { ok: false, error: "Invalid admin route." };
+
+  const actor = await requireRealAdmin();
+  if (!actor) return { ok: false, error: "Demo/preview mode is read-only." };
+
+  const instructorId = text(formData, "instructor_id");
+  if (!instructorId) return { ok: false, error: "Instructor is required." };
+
+  const admin = createAdminClient();
+
+  const { data: instructor } = await admin
+    .from("instructor_profiles")
+    .select("profile_id")
+    .eq("profile_id", instructorId)
+    .maybeSingle();
+
+  if (!instructor) return { ok: false, error: "Instructor account could not be found." };
+
+  const { count: assignedClasses } = await admin
+    .from("classes")
+    .select("id", { count: "exact", head: true })
+    .eq("instructor_id", instructorId);
+
+  const { error: unassignError } = await admin
+    .from("classes")
+    .update({ instructor_id: null })
+    .eq("instructor_id", instructorId);
+
+  if (unassignError) {
+    return { ok: false, error: `Unable to unassign instructor classes: ${unassignError.message}` };
+  }
+
+  await admin.from("audit_logs").insert({
+    actor_id: actor.id,
+    action: "instructor.deleted",
+    entity_type: "instructor",
+    entity_id: instructorId,
+    metadata: { assigned_classes_unassigned: assignedClasses ?? 0 },
+  });
+
+  const { error: deleteError } = await admin.auth.admin.deleteUser(instructorId);
+  if (deleteError) return { ok: false, error: deleteError.message };
+
+  revalidateInstructorPaths(accessKey);
+  return { ok: true };
 }

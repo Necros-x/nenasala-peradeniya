@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  ArrowLeft,
   BarChart3,
   BookOpen,
   ClipboardCheck,
@@ -22,26 +23,39 @@ import { ThemeMenu } from "@/components/theme/ThemeMenu";
 import type { InstructorProfileRecord } from "@/lib/services/instructor-portal";
 
 const nav = [
-  { href: "/instructor/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/instructor/classes", label: "My Classes", icon: UsersRound },
-  { href: "/instructor/content", label: "Course Content", icon: BookOpen },
-  { href: "/instructor/assignments", label: "Assignments", icon: ClipboardCheck },
-  { href: "/instructor/quizzes", label: "Quiz Results", icon: FileQuestion },
-  { href: "/instructor/recordings", label: "Recordings", icon: PlayCircle },
-  { href: "/instructor/announcements", label: "Announcements", icon: Megaphone },
-  { href: "/instructor/progress", label: "Student Progress", icon: BarChart3 },
+  { segment: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { segment: "classes", label: "My Classes", icon: UsersRound },
+  { segment: "content", label: "Course Content", icon: BookOpen },
+  { segment: "assignments", label: "Assignments", icon: ClipboardCheck },
+  { segment: "quizzes", label: "Quiz Results", icon: FileQuestion },
+  { segment: "recordings", label: "Recordings", icon: PlayCircle },
+  { segment: "announcements", label: "Announcements", icon: Megaphone },
+  { segment: "progress", label: "Student Progress", icon: BarChart3 },
 ];
 
 function initials(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "IN";
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "IN";
 }
 
 export default function InstructorShell({
   children,
   profile,
+  basePath,
+  loginPath,
+  controlCenterPath,
+  globalView = false,
 }: {
   children: React.ReactNode;
   profile: InstructorProfileRecord;
+  basePath: string;
+  loginPath: string;
+  controlCenterPath: string;
+  globalView?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -51,7 +65,7 @@ export default function InstructorShell({
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
-      router.replace("/login");
+      router.replace(loginPath);
       router.refresh();
     } catch {
       toast.error("Unable to sign out.");
@@ -61,23 +75,38 @@ export default function InstructorShell({
   const sidebar = (
     <>
       <div className="flex h-20 items-center border-b border-border px-5">
-        <Link href="/instructor/dashboard" onClick={() => setMobileOpen(false)}>
+        <Link href={`${basePath}/dashboard`} onClick={() => setMobileOpen(false)}>
           <img src="/brand/nenasala-logo.png" alt="Nenasala" className="h-10 w-auto max-w-[170px] object-contain" />
         </Link>
       </div>
+
       <div className="border-b border-border px-5 py-4">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-primary">Lecturer Portal</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-primary">Instructor Portal</p>
         <p className="mt-1 truncate text-sm font-semibold text-text-primary">{profile.full_name}</p>
         <p className="truncate text-xs text-text-muted">{profile.professional_title ?? "Instructor"}</p>
       </div>
+
+      <div className="border-b border-border px-3 py-3">
+        <Link
+          href={controlCenterPath}
+          onClick={() => setMobileOpen(false)}
+          className="flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-xs font-semibold text-text-secondary transition-colors hover:bg-surface-muted hover:text-text-primary"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Control Center
+        </Link>
+      </div>
+
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
         {nav.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const href = `${basePath}/${item.segment}`;
+          const active = pathname === href || pathname.startsWith(`${href}/`);
           const Icon = item.icon;
+
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={item.segment}
+              href={href}
               onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm font-semibold transition-colors ${
                 active
@@ -86,7 +115,7 @@ export default function InstructorShell({
               }`}
             >
               <Icon className="h-4 w-4" />
-              {item.label}
+              {globalView && item.segment === "classes" ? "All Classes" : item.label}
             </Link>
           );
         })}
@@ -97,6 +126,7 @@ export default function InstructorShell({
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <Toaster position="top-right" richColors />
+
       {mobileOpen && (
         <button
           type="button"
@@ -134,8 +164,12 @@ export default function InstructorShell({
           </button>
 
           <div>
-            <p className="text-sm font-bold text-text-primary">Lecturer Workspace</p>
-            <p className="hidden text-xs text-text-muted sm:block">Only your assigned classes and students are shown.</p>
+            <p className="text-sm font-bold text-text-primary">Instructor Workspace</p>
+            <p className="hidden text-xs text-text-muted sm:block">
+              {globalView
+                ? "Super Admin view of all instructor-side data."
+                : "Only your assigned classes and students are shown."}
+            </p>
           </div>
 
           <div className="ml-auto flex items-center gap-2">

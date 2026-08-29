@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireRealInstructor } from "@/lib/auth/guards";
+import { requireRealInstructorPortalActor } from "@/lib/auth/guards";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { deliverNotification } from "@/lib/notifications/deliver";
 
@@ -15,20 +15,23 @@ function text(formData: FormData, key: string) {
 export async function createInstructorAnnouncementAction(
   formData: FormData
 ): Promise<InstructorAnnouncementActionResult> {
-  const actor = await requireRealInstructor();
-  if (!actor) return { ok: false, error: "An instructor account is required." };
+  const actor = await requireRealInstructorPortalActor();
+  if (!actor) return { ok: false, error: "Instructor Portal access is required." };
+
+  const isSuperAdmin = actor.roles.includes("super_admin");
 
   const classId = text(formData, "class_id");
   const title = text(formData, "title");
   const body = text(formData, "body");
   const priority = text(formData, "priority");
 
-  if (!classId) return { ok: false, error: "Choose one of your classes." };
+  if (!classId) return { ok: false, error: "Choose a class." };
   if (title.length < 2 || title.length > 180) return { ok: false, error: "Title must be between 2 and 180 characters." };
   if (body.length < 2 || body.length > 20000) return { ok: false, error: "Message must be between 2 and 20,000 characters." };
   if (!["general", "course", "urgent"].includes(priority)) return { ok: false, error: "Invalid announcement priority." };
 
   const admin = createAdminClient();
+
   const { data: classRow, error: classError } = await admin
     .from("classes")
     .select("id,intake_id,instructor_id,name,courses(title)")
@@ -36,11 +39,13 @@ export async function createInstructorAnnouncementAction(
     .maybeSingle();
 
   if (classError || !classRow) return { ok: false, error: "Class could not be found." };
-  if (classRow.instructor_id !== actor.id) {
+
+  if (!isSuperAdmin && classRow.instructor_id !== actor.id) {
     return { ok: false, error: "You can only publish announcements to classes assigned to you." };
   }
 
   const now = new Date().toISOString();
+
   const { data: announcement, error: insertError } = await admin
     .from("announcements")
     .insert({
@@ -74,6 +79,7 @@ export async function createInstructorAnnouncementAction(
   } else if (enrollments?.length) {
     const compact = body.replace(/\s+/g, " ").trim();
     const message = compact.length > 180 ? `${compact.slice(0, 177)}...` : compact;
+
     await deliverNotification({
       userIds: enrollments.map((row) => row.student_id),
       title: priority === "urgent" ? `Urgent: ${title}` : title,
@@ -88,14 +94,12 @@ export async function createInstructorAnnouncementAction(
 
   await admin.from("audit_logs").insert({
     actor_id: actor.id,
-    action: "announcement.created_by_instructor",
+    action: isSuperAdmin ? "announcement.created_by_super_admin_in_instructor_portal" : "announcement.created_by_instructor",
     entity_type: "announcement",
     entity_id: announcement.id,
     metadata: { class_id: classId, priority },
   });
 
-  revalidatePath("/instructor/announcements");
-  revalidatePath("/instructor/dashboard");
   revalidatePath("/student/announcements");
   revalidatePath("/student/dashboard");
   revalidatePath("/student/notifications");

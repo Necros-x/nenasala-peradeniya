@@ -15,27 +15,41 @@ function siteUrl(path: string) {
   }
 }
 
-export async function requestPasswordResetAction(rawEmail: string) {
-  const email = rawEmail.trim().toLowerCase();
-  if (!email || !email.includes("@")) return { ok: true };
+function safeInternalReturnTo(value?: string) {
+  if (!value) return null;
+  if (!value.startsWith("/internal/") || value.startsWith("//") || value.includes("\\")) return null;
+  return value;
+}
 
-  const redirectTo = siteUrl("/reset-password");
+export async function requestPasswordResetAction(rawEmail: string, returnTo?: string) {
+  const email = rawEmail.trim().toLowerCase();
+  if (!email || !email.includes("@")) return { ok: true, delivery: "accepted" as const };
+
+  const safeReturnTo = safeInternalReturnTo(returnTo);
+  const resetPath = safeReturnTo
+    ? `/reset-password?next=${encodeURIComponent(safeReturnTo)}`
+    : "/reset-password";
+
+  const redirectTo = siteUrl(resetPath);
   if (!redirectTo) {
     console.error("NEXT_PUBLIC_SITE_URL or APP_URL is required for custom password-reset emails.");
-    return { ok: true };
+    return { ok: true, delivery: "unavailable" as const };
   }
 
   try {
     const admin = createAdminClient();
     const emailHash = createHash("sha256").update(email).digest("hex");
+
     const { data: throttle } = await admin
       .from("password_reset_throttle")
       .select("last_requested_at")
       .eq("email_hash", emailHash)
       .maybeSingle();
+
     if (throttle?.last_requested_at && Date.now() - new Date(throttle.last_requested_at).getTime() < 2 * 60_000) {
-      return { ok: true };
+      return { ok: true, delivery: "accepted" as const };
     }
+
     await admin.from("password_reset_throttle").upsert({
       email_hash: emailHash,
       last_requested_at: new Date().toISOString(),
@@ -57,19 +71,25 @@ export async function requestPasswordResetAction(rawEmail: string) {
       if (error && !error.message.toLowerCase().includes("not found")) {
         console.error("Unable to generate password reset link:", error.message);
       }
-      return { ok: true };
+      return { ok: true, delivery: "accepted" as const };
     }
 
     const template = passwordResetEmail({
-      name: profile?.full_name ?? "Student",
+      name: profile?.full_name ?? "Nenasala user",
       actionUrl: data.properties.action_link,
     });
+
     const result = await sendEmail({ to: profile?.email ?? email, ...template });
-    if (!result.ok && !result.skipped) console.error("Unable to send password reset email:", result.error);
+
+    if (result.skipped) return { ok: true, delivery: "unavailable" as const };
+    if (!result.ok) {
+      console.error("Unable to send password reset email:", result.error);
+      return { ok: true, delivery: "accepted" as const };
+    }
+
+    return { ok: true, delivery: "sent" as const };
   } catch (error) {
     console.error("Password reset request failed:", error);
+    return { ok: true, delivery: "accepted" as const };
   }
-
-  // Always return the same response so this endpoint does not reveal registered emails.
-  return { ok: true };
 }

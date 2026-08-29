@@ -18,17 +18,34 @@ export function ResetPasswordForm() {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+
     if (password.length < 8) return setError("Use at least 8 characters.");
     if (password !== confirm) return setError("Passwords do not match.");
 
     setLoading(true);
+
     try {
       const supabase = createClient();
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw updateError;
+
       const { data: roleRows } = await supabase.from("user_roles").select("role");
       const roles = new Set((roleRows ?? []).map((row) => row.role));
-      const destination = roles.has("instructor") ? "/instructor/dashboard" : "/student/dashboard";
+
+      const requestedNext = new URLSearchParams(window.location.search).get("next");
+      const safeInternalNext =
+        requestedNext?.startsWith("/internal/") &&
+        !requestedNext.startsWith("//") &&
+        !requestedNext.includes("\\")
+          ? requestedNext
+          : null;
+
+      const isInternalUser = roles.has("instructor") || roles.has("admin") || roles.has("super_admin");
+      const destination = safeInternalNext && isInternalUser
+        ? safeInternalNext
+        : roles.has("student")
+          ? "/student/dashboard"
+          : "/";
 
       setSuccess(true);
       window.setTimeout(() => {
