@@ -6,6 +6,7 @@ import { isValidAdminAccessKey } from "@/lib/security/admin-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { AnnouncementAudience, AnnouncementPriority, AnnouncementStatus } from "@/lib/services/announcements";
+import { deliverNotification } from "@/lib/notifications/deliver";
 
 export type AnnouncementActionState = { ok: boolean; error?: string };
 
@@ -132,18 +133,16 @@ async function syncAnnouncementNotifications(
     if (recipients.length === 0) return;
     const compact = body.replace(/\s+/g, " ").trim();
     const message = compact.length > 180 ? `${compact.slice(0, 177)}...` : compact;
-    const { error } = await adminClient.from("notifications").upsert(
-      recipients.map((studentId) => ({
-        user_id: studentId,
-        title: priority === "urgent" ? `Urgent: ${title}` : title,
-        message,
-        type: "announcement",
-        link: `/student/announcements/${announcementId}`,
-        source_key: sourceKey,
-      })),
-      { onConflict: "user_id,source_key" }
-    );
-    if (error) console.error("Announcement saved but notifications failed:", error.message);
+    await deliverNotification({
+      userIds: recipients,
+      title: priority === "urgent" ? `Urgent: ${title}` : title,
+      message,
+      type: "announcement",
+      link: `/student/announcements/${announcementId}`,
+      sourceKey,
+      emailCategory: "announcements",
+      actionLabel: "Read announcement",
+    });
   } catch (error) {
     console.error("Announcement saved but notifications failed:", error);
   }

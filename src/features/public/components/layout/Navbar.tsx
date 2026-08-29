@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 import { Button } from "../ui/Button";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { cn } from "../../lib/utils";
+import { ThemeMenu } from "@/components/theme/ThemeMenu";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -75,6 +76,7 @@ export function Navbar() {
         </nav>
 
         <div className="hidden md:flex items-center gap-4">
+          <ThemeMenu />
           <Link to="/login">
             <Button variant="primary" className="rounded-full px-6">Login / Sign up</Button>
           </Link>
@@ -91,7 +93,7 @@ export function Navbar() {
 
       {/* Mobile Nav */}
       {isOpen && (
-        <div className="md:hidden mt-2 border border-[var(--color-border)] rounded-[var(--radius-lg)] bg-[var(--color-surface)] pointer-events-auto shadow-lg overflow-hidden">
+        <div className="relative md:hidden mt-2 border border-[var(--color-border)] rounded-[var(--radius-lg)] bg-[var(--color-surface)] pointer-events-auto shadow-lg">
           <div className="space-y-1 px-4 pb-4 pt-4">
             {links.map((link) => {
               const isActive = location.pathname.startsWith(link.href);
@@ -111,6 +113,10 @@ export function Navbar() {
                 </Link>
               );
             })}
+            <div className="mt-3 flex items-center justify-between rounded-[var(--radius-md)] bg-[var(--color-surface-elevated)] px-3 py-2">
+              <span className="text-sm font-medium text-[var(--color-text-secondary)]">Appearance</span>
+              <ThemeMenu showLabel />
+            </div>
             <div className="mt-4 px-3 pt-2 border-t border-[var(--color-border)]">
               <Link to="/login" onClick={() => setIsOpen(false)}>
                 <Button variant="primary" className="w-full rounded-full py-6">Login / Sign up</Button>

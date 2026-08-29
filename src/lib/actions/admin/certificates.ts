@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireRealAdmin } from "@/lib/auth/guards";
 import { isValidAdminAccessKey } from "@/lib/security/admin-access";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { deliverNotification } from "@/lib/notifications/deliver";
 
 export type CertificateActionState = { ok: boolean; error?: string; credentialId?: string };
 
@@ -57,16 +58,19 @@ async function notifyStudent(
   message: string,
   sourceKey: string
 ) {
-  const { error } = await supabase.from("notifications").upsert({
-    user_id: studentId,
+  void supabase;
+  const result = await deliverNotification({
+    userIds: [studentId],
     title,
     message,
     type: "system",
     link: "/student/certificates",
-    source_key: sourceKey,
-  }, { onConflict: "user_id,source_key", ignoreDuplicates: true });
+    sourceKey,
+    emailCategory: "certificates",
+    actionLabel: "View certificates",
+  });
 
-  if (error) console.error("Certificate updated but notification creation failed:", error.message);
+  if (!result.ok) console.error("Certificate updated but notification creation failed.");
 }
 
 export async function issueCertificateAction(formData: FormData): Promise<CertificateActionState> {

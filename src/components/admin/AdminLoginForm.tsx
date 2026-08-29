@@ -7,6 +7,7 @@ import { Button } from "@/features/admin/components/ui/button";
 import { Input } from "@/features/admin/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/features/admin/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
+import { ThemeMenu } from "@/components/theme/ThemeMenu";
 
 export function AdminLoginForm() {
   const params = useParams<{ accessKey: string }>();
@@ -34,7 +35,8 @@ export function AdminLoginForm() {
   }
 
   return (
-    <main className="min-h-screen bg-background px-4 py-12 grid place-items-center">
+    <main className="relative min-h-screen bg-background px-4 py-12 grid place-items-center">
+      <ThemeMenu className="absolute right-5 top-5" />
       <div className="w-full max-w-md">
         <img src="/brand/nenasala-logo.png" alt="Nenasala" className="mx-auto mb-8 h-16 w-auto max-w-[260px] object-contain" />
         <Card className="border-border shadow-[var(--shadow-floating)]">

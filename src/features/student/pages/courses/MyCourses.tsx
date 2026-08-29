@@ -121,7 +121,7 @@ export default function MyCourses({ initialCourses }: { initialCourses?: Course[
                     </div>
 
                     <Link to={`/courses/${course.id}`}>
-                      <Button variant="outline" className="w-full group-hover:bg-[var(--color-primary)] group-hover:text-[var(--color-static-white)] group-hover:border-transparent">
+                      <Button variant="outline" className="w-full hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-static-white)] group-hover:border-[var(--color-primary)] group-hover:bg-[var(--color-primary)] group-hover:text-[var(--color-static-white)]">
                         {progress > 0 ? 'Continue Course' : 'Start Course'}
                       </Button>
                     </Link>

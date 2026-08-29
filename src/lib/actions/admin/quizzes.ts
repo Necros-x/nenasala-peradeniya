@@ -5,6 +5,7 @@ import { requireRealAdmin } from "@/lib/auth/guards";
 import { isValidAdminAccessKey } from "@/lib/security/admin-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { deliverNotification } from "@/lib/notifications/deliver";
 
 export type QuizActionState = { ok: boolean; error?: string };
 
@@ -89,18 +90,16 @@ async function notifyPublishedQuiz(
         }).format(new Date(dueAt))}.`
       : "";
 
-    const { error } = await adminClient.from("notifications").upsert(
-      enrollments.map((enrollment) => ({
-        user_id: enrollment.student_id,
-        title: "New quiz published",
-        message: `“${title}” is now available.${dueText}`,
-        type: "quiz",
-        link: `/student/quizzes/${quizId}`,
-        source_key: `quiz-published:${quizId}`,
-      })),
-      { onConflict: "user_id,source_key", ignoreDuplicates: true }
-    );
-    if (error) console.error("Quiz saved but publication notifications failed:", error.message);
+    await deliverNotification({
+      userIds: enrollments.map((enrollment) => enrollment.student_id),
+      title: "New quiz published",
+      message: `“${title}” is now available.${dueText}`,
+      type: "quiz",
+      link: `/student/quizzes/${quizId}`,
+      sourceKey: `quiz-published:${quizId}`,
+      emailCategory: "quizzes",
+      actionLabel: "Open quiz",
+    });
   } catch (error) {
     console.error("Quiz saved but publication notifications failed:", error);
   }
@@ -475,15 +474,16 @@ export async function enableQuizRetryAction(formData: FormData): Promise<QuizAct
   }
 
   const retryNumber = used + 1;
-  const { error: notificationError } = await adminClient.from("notifications").upsert({
-    user_id: studentId,
+  await deliverNotification({
+    userIds: [studentId],
     title: "Quiz retry enabled",
     message: `You can take one additional attempt for “${quiz.title}”. Open the quiz when you are ready.`,
     type: "quiz",
     link: `/student/quizzes/${quizId}`,
-    source_key: `quiz-retry:${quizId}:${studentId}:${retryNumber}`,
-  }, { onConflict: "user_id,source_key", ignoreDuplicates: true });
-  if (notificationError) console.error("Retry enabled but notification failed:", notificationError.message);
+    sourceKey: `quiz-retry:${quizId}:${studentId}:${retryNumber}`,
+    emailCategory: "quizzes",
+    actionLabel: "Open quiz",
+  });
 
   await adminClient.from("audit_logs").insert({
     actor_id: actorId,

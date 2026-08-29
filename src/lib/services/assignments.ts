@@ -3,6 +3,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { CalendarEvent } from "@/features/student/types";
+import { deliverNotification } from "@/lib/notifications/deliver";
 
 export type AssignmentStatus = "draft" | "published" | "closed" | "archived";
 export type SubmissionStatus = "draft" | "submitted" | "late" | "graded" | "returned";
@@ -123,11 +124,8 @@ async function syncAssignmentPublicationNotifications(
   if (assignments.length === 0) return;
 
   try {
-    const adminClient = createAdminClient();
-    const rows = assignments.map((assignment) => ({
-      user_id: studentId,
-      title: "New assignment published",
-      message: assignment.due_at
+    await Promise.all(assignments.map((assignment) => {
+      const message = assignment.due_at
         ? `“${assignment.title}” is now available and is due ${new Intl.DateTimeFormat("en-LK", {
             day: "numeric",
             month: "short",
@@ -136,16 +134,18 @@ async function syncAssignmentPublicationNotifications(
             minute: "2-digit",
             timeZone: "Asia/Colombo",
           }).format(new Date(assignment.due_at))}.`
-        : `“${assignment.title}” is now available in ${assignment.course_title}.`,
-      type: "assignment",
-      link: `/student/assignments/${assignment.id}`,
-      source_key: `assignment-published:${assignment.id}`,
+        : `“${assignment.title}” is now available in ${assignment.course_title}.`;
+      return deliverNotification({
+        userIds: [studentId],
+        title: "New assignment published",
+        message,
+        type: "assignment",
+        link: `/student/assignments/${assignment.id}`,
+        sourceKey: `assignment-published:${assignment.id}`,
+        emailCategory: "assignments",
+        actionLabel: "Open assignment",
+      });
     }));
-
-    const { error } = await adminClient
-      .from("notifications")
-      .upsert(rows, { onConflict: "user_id,source_key", ignoreDuplicates: true });
-    if (error) console.error("Unable to sync assignment publication notifications:", error.message);
   } catch (error) {
     console.error("Unable to sync assignment publication notifications:", error);
   }

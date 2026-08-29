@@ -2,6 +2,7 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { deliverNotification } from "@/lib/notifications/deliver";
 
 export type QuizStatus = "draft" | "published" | "closed" | "archived";
 export type QuizQuestionType = "multiple_choice" | "true_false";
@@ -159,11 +160,8 @@ async function syncQuizPublicationNotifications(studentId: string, quizzes: Stud
   if (quizzes.length === 0) return;
 
   try {
-    const adminClient = createAdminClient();
-    const rows = quizzes.map((quiz) => ({
-      user_id: studentId,
-      title: "New quiz published",
-      message: quiz.due_at
+    await Promise.all(quizzes.map((quiz) => {
+      const message = quiz.due_at
         ? `“${quiz.title}” is now available and is due ${new Intl.DateTimeFormat("en-LK", {
             day: "numeric",
             month: "short",
@@ -172,16 +170,18 @@ async function syncQuizPublicationNotifications(studentId: string, quizzes: Stud
             minute: "2-digit",
             timeZone: "Asia/Colombo",
           }).format(new Date(quiz.due_at))}.`
-        : `“${quiz.title}” is now available in ${quiz.course_title}.`,
-      type: "quiz",
-      link: `/student/quizzes/${quiz.id}`,
-      source_key: `quiz-published:${quiz.id}`,
+        : `“${quiz.title}” is now available in ${quiz.course_title}.`;
+      return deliverNotification({
+        userIds: [studentId],
+        title: "New quiz published",
+        message,
+        type: "quiz",
+        link: `/student/quizzes/${quiz.id}`,
+        sourceKey: `quiz-published:${quiz.id}`,
+        emailCategory: "quizzes",
+        actionLabel: "Open quiz",
+      });
     }));
-
-    const { error } = await adminClient
-      .from("notifications")
-      .upsert(rows, { onConflict: "user_id,source_key", ignoreDuplicates: true });
-    if (error) console.error("Unable to sync quiz publication notifications:", error.message);
   } catch (error) {
     console.error("Unable to sync quiz publication notifications:", error);
   }

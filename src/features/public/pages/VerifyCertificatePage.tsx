@@ -86,7 +86,7 @@ export default function VerifyCertificatePage({
         </div>
 
         <form action="/verify" method="get" className="mx-auto mt-10 max-w-2xl">
-          <div className="flex flex-col gap-3 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-lg shadow-[var(--color-text-primary)]/5 sm:flex-row">
+          <div className="flex flex-col gap-3 rounded-[32px] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-lg shadow-[var(--color-text-primary)]/5 sm:flex-row sm:rounded-full">
             <label className="relative flex-1">
               <span className="sr-only">Credential ID</span>
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--color-text-muted)]" />
@@ -95,12 +95,12 @@ export default function VerifyCertificatePage({
                 defaultValue={query}
                 autoComplete="off"
                 placeholder="e.g. NPU-XXXX-XXXX"
-                className="h-12 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-background)] pl-12 pr-4 font-mono text-sm font-semibold text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/15"
+                className="h-12 w-full rounded-full border border-[var(--color-border)] bg-[var(--color-background)] pl-12 pr-4 font-mono text-sm font-semibold text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/15"
               />
             </label>
             <button
               type="submit"
-              className="inline-flex h-12 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary)] px-6 text-sm font-bold text-[var(--color-static-white)] transition hover:bg-[var(--color-primary-hover)]"
+              className="inline-flex h-12 items-center justify-center rounded-full bg-[var(--color-primary)] px-7 text-sm font-bold text-[var(--color-static-white)] transition hover:bg-[var(--color-primary-hover)] hover:text-[var(--color-static-white)]"
             >
               Verify credential
             </button>

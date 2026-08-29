@@ -48,7 +48,7 @@ export function FinalCTASection() {
              className="flex flex-col sm:flex-row justify-center gap-4"
           >
             <Link to="/courses">
-              <Button size="lg" className="w-full sm:w-auto rounded-full px-8 py-6 text-base bg-[var(--color-static-white)] text-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] hover:text-color-text-inverse border-none">
+              <Button size="lg" className="w-full sm:w-auto rounded-full px-8 py-6 text-base bg-[var(--color-static-white)] text-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] hover:text-[var(--color-static-white)] border-none">
                 Explore Courses
               </Button>
             </Link>

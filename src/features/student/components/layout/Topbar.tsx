@@ -8,6 +8,7 @@ import { NotificationBell } from '../ui/NotificationBell';
 import { getCurrentStudent } from '@/features/student/lib/services';
 import { Student } from '@/features/student/types';
 import { Link } from 'react-router-dom';
+import { ThemeMenu } from '@/components/theme/ThemeMenu';
 
 interface TopbarProps {
   onMenuClick: () => void;
@@ -30,6 +31,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">
+        <ThemeMenu />
         <NotificationBell />
         
         {student && (

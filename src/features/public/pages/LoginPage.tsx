@@ -17,6 +17,7 @@ import {
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { createClient } from "@/lib/supabase/client";
+import { requestPasswordResetAction } from "@/lib/actions/auth/password-reset";
 
 const CAMERA_TRANSITION = {
   type: "spring" as const,
@@ -104,22 +105,22 @@ function AuthVisual({ mode }: { mode: "login" | "signup" }) {
             </div>
 
             <div className="my-auto flex items-center justify-center">
-              <div className="relative">
-                <div className="absolute -inset-8 rounded-full bg-[var(--color-primary-soft)]" />
-                <div className="relative grid h-36 w-36 place-items-center rounded-[42px] bg-[var(--color-primary)] text-[var(--color-static-white)] shadow-lg">
+              <div className="relative grid h-56 w-64 place-items-center">
+                <div className="absolute h-52 w-52 rounded-full bg-[var(--color-primary-soft)]" />
+                <div className="relative z-10 grid h-36 w-36 place-items-center rounded-[42px] bg-[var(--color-primary)] text-[var(--color-static-white)] shadow-lg">
                   <GraduationCap className="h-16 w-16" strokeWidth={1.6} />
                 </div>
                 <motion.div
                   animate={{ y: [0, -7, 0] }}
                   transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute -right-12 -top-8 grid h-14 w-14 place-items-center rounded-[18px] border border-[var(--color-border)] bg-[var(--color-static-white)] text-[var(--color-primary)] shadow-md"
+                  className="absolute right-0 top-4 z-20 grid h-14 w-14 place-items-center rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-primary)] shadow-md"
                 >
                   <BookOpen className="h-6 w-6" />
                 </motion.div>
                 <motion.div
                   animate={{ y: [0, 6, 0] }}
                   transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute -bottom-7 -left-12 grid h-12 w-12 place-items-center rounded-[16px] border border-[var(--color-border)] bg-[var(--color-static-white)] text-[var(--color-primary)] shadow-md"
+                  className="absolute bottom-5 left-2 z-20 grid h-12 w-12 place-items-center rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-primary)] shadow-md"
                 >
                   <Sparkles className="h-5 w-5" />
                 </motion.div>
@@ -217,10 +218,7 @@ export function LoginPage() {
     setMessage(null);
 
     try {
-      const supabase = createClient();
-      const redirectTo = `${window.location.origin}/auth/callback?next=/reset-password`;
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-      if (resetError) throw resetError;
+      await requestPasswordResetAction(email);
       setMessage("Password reset instructions have been sent if an account exists for this email.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to send the reset email.");

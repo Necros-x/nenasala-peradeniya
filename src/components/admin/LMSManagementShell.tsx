@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -13,8 +13,6 @@ import {
   MessageSquare,
   ClipboardList,
   Search,
-  Sun,
-  Moon,
   LogOut,
   Menu,
   X,
@@ -34,6 +32,7 @@ import {
 import { cn } from "@/features/admin/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { ThemeMenu } from "@/components/theme/ThemeMenu";
 
 const navGroups = [
   {
@@ -126,15 +125,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function LMSManagementShell({ children }: { children: React.ReactNode }) {
-  const [isDark, setIsDark] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const params = useParams<{ accessKey: string }>();
   const router = useRouter();
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark);
-    return () => document.documentElement.classList.remove("dark");
-  }, [isDark]);
 
   async function signOut() {
     try {
@@ -199,14 +192,7 @@ export function LMSManagementShell({ children }: { children: React.ReactNode }) 
               <p className="text-[10px] text-text-muted">Learning operations workspace</p>
             </div>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsDark((value) => !value)}
-              aria-label="Toggle theme"
-            >
-              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
+            <ThemeMenu />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

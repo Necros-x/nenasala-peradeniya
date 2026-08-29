@@ -154,7 +154,7 @@ export default function RealDashboard({ data }: { data: StudentDashboardData }) 
 
                     <div className="mt-6">
                       <Link href={next ? `/student/courses/${activeCourse.id}/lesson/${next.lesson.id}` : `/student/courses/${activeCourse.id}`}>
-                        <Button className="bg-[var(--color-static-white)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]">
+                        <Button className="bg-[var(--color-static-white)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]">
                           {activeProgress > 0 && activeProgress < 100 ? "Continue Learning" : activeProgress >= 100 ? "Review Course" : "Start Course"}
                           <ChevronRight className="ml-1 h-4 w-4" />
                         </Button>
@@ -214,7 +214,7 @@ export default function RealDashboard({ data }: { data: StudentDashboardData }) 
         </div>
 
         <div className="space-y-8">
-          <section>
+          <section className="ml-5">
             <h2 className="mb-4 text-xl font-bold text-[var(--color-text-primary)]">Your Stats</h2>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
               <Card className="p-4">

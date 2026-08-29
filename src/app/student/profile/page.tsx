@@ -1,2 +1,2 @@
-import Settings from "@/features/student/pages/Settings";
-export default function Page() { return <Settings />; }
+import { redirect } from "next/navigation";
+export default function Page() { redirect("/student/settings"); }

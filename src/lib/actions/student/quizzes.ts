@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { QuizAnswerValue, StudentQuizQuestion } from "@/lib/services/quizzes";
+import { deliverNotification } from "@/lib/notifications/deliver";
 
 export type QuizAttemptActionResult = {
   ok: boolean;
@@ -160,6 +161,17 @@ async function gradeAttempt(
     .maybeSingle();
   if (error || !updated) return { ok: false, error: "This attempt has already been submitted." };
 
+  await deliverNotification({
+    userIds: [attempt.student_id],
+    title: passed ? "Quiz passed" : "Quiz result available",
+    message: `You scored ${percentage}% on “${quiz.title ?? "your quiz"}” (${scorePoints}/${maxPoints} points).`,
+    type: "quiz",
+    link: `/student/quizzes/${quiz.id}`,
+    sourceKey: `quiz-result:${attempt.id}`,
+    emailCategory: "quizzes",
+    actionLabel: "View result",
+  });
+
   revalidatePath("/student/quizzes");
   revalidatePath(`/student/quizzes/${quiz.id}`);
   return {
@@ -191,7 +203,7 @@ export async function startQuizAttemptAction(quizId: string): Promise<QuizAttemp
 
   const { data: active } = await supabase
     .from("quiz_attempts")
-    .select("id,attempt_number,started_at,answers,status")
+    .select("id,student_id,attempt_number,started_at,answers,status")
     .eq("quiz_id", quizId)
     .eq("student_id", studentId)
     .eq("status", "in_progress")
@@ -326,7 +338,7 @@ export async function submitQuizAttemptAction(
 
   const { data: quiz, error: quizError } = await adminClient
     .from("quizzes")
-    .select("id,time_limit_minutes,pass_percentage")
+    .select("id,title,time_limit_minutes,pass_percentage")
     .eq("id", attempt.quiz_id)
     .maybeSingle();
   if (quizError || !quiz) return { ok: false, error: "Quiz could not be found." };

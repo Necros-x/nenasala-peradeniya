@@ -5,6 +5,7 @@ import { requireRealAdmin } from "@/lib/auth/guards";
 import { isValidAdminAccessKey } from "@/lib/security/admin-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { deliverNotification } from "@/lib/notifications/deliver";
 
 export type AssignmentActionState = { ok: boolean; error?: string };
 
@@ -119,20 +120,16 @@ async function notifyPublishedAssignment(
         }).format(new Date(dueAt))}.`
       : "";
 
-    const { error: notificationError } = await adminClient.from("notifications").upsert(
-      enrollments.map((enrollment) => ({
-        user_id: enrollment.student_id,
-        title: "New assignment published",
-        message: `“${title}” is now available.${dueText}`,
-        type: "assignment",
-        link: `/student/assignments/${assignmentId}`,
-        source_key: `assignment-published:${assignmentId}`,
-      })),
-      { onConflict: "user_id,source_key", ignoreDuplicates: true }
-    );
-    if (notificationError) {
-      console.error("Assignment saved but publication notifications failed:", notificationError.message);
-    }
+    await deliverNotification({
+      userIds: enrollments.map((enrollment) => enrollment.student_id),
+      title: "New assignment published",
+      message: `“${title}” is now available.${dueText}`,
+      type: "assignment",
+      link: `/student/assignments/${assignmentId}`,
+      sourceKey: `assignment-published:${assignmentId}`,
+      emailCategory: "assignments",
+      actionLabel: "Open assignment",
+    });
   } catch (error) {
     console.error("Assignment saved but publication notifications failed:", error);
   }
@@ -252,6 +249,17 @@ export async function gradeSubmissionAction(formData: FormData): Promise<Assignm
     metadata: { assignment_id: submission.assignment_id, score },
   });
 
+  await deliverNotification({
+    userIds: [submission.student_id],
+    title: "Assignment graded",
+    message: `Your submission for “${assignment.title}” has been graded: ${score}/${maxPoints}. Open the assignment to view feedback.`,
+    type: "assignment",
+    link: `/student/assignments/${submission.assignment_id}`,
+    sourceKey: `assignment-graded:${submissionId}`,
+    emailCategory: "assignments",
+    actionLabel: "View grade",
+  });
+
   revalidateReviewPaths(accessKey, submission.assignment_id);
   return { ok: true };
 }
@@ -287,17 +295,16 @@ export async function enableResubmissionAction(formData: FormData): Promise<Assi
   }
 
   const nextResubmissionAttempt = Number(submission.resubmission_count ?? 0) + 1;
-  const { error: notificationError } = await adminClient.from("notifications").upsert({
-    user_id: submission.student_id,
+  await deliverNotification({
+    userIds: [submission.student_id],
     title: "Assignment resubmission enabled",
     message: `You can submit one new attempt for “${assignment.title}”. Open the assignment to resubmit your work.`,
     type: "assignment",
     link: `/student/assignments/${submission.assignment_id}`,
-    source_key: `assignment-resubmission:${submissionId}:${nextResubmissionAttempt}`,
-  }, { onConflict: "user_id,source_key", ignoreDuplicates: true });
-  if (notificationError) {
-    console.error("Resubmission was enabled but notification creation failed:", notificationError);
-  }
+    sourceKey: `assignment-resubmission:${submissionId}:${nextResubmissionAttempt}`,
+    emailCategory: "assignments",
+    actionLabel: "Resubmit assignment",
+  });
 
   await adminClient.from("audit_logs").insert({
     actor_id: actorId,

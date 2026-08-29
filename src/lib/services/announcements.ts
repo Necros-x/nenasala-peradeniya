@@ -2,6 +2,7 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { deliverNotification } from "@/lib/notifications/deliver";
 
 export type AnnouncementPriority = "general" | "course" | "urgent";
 export type AnnouncementAudience = "all_students" | "programme" | "intake" | "course" | "class" | "students";
@@ -216,19 +217,18 @@ function announcementNotificationMessage(announcement: StudentAnnouncementRecord
 async function syncRowsToNotifications(studentId: string, rows: StudentAnnouncementRecord[]) {
   if (rows.length === 0) return;
   try {
-    const admin = createAdminClient();
-    const { error } = await admin.from("notifications").upsert(
-      rows.map((announcement) => ({
-        user_id: studentId,
+    await Promise.all(rows.map((announcement) =>
+      deliverNotification({
+        userIds: [studentId],
         title: announcement.priority === "urgent" ? `Urgent: ${announcement.title}` : announcement.title,
         message: announcementNotificationMessage(announcement),
         type: "announcement",
         link: `/student/announcements/${announcement.id}`,
-        source_key: `announcement:${announcement.id}`,
-      })),
-      { onConflict: "user_id,source_key" }
-    );
-    if (error) console.error("Unable to sync announcement notifications:", error.message);
+        sourceKey: `announcement:${announcement.id}`,
+        emailCategory: "announcements",
+        actionLabel: "Read announcement",
+      })
+    ));
   } catch (error) {
     console.error("Unable to sync announcement notifications:", error);
   }

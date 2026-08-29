@@ -230,7 +230,7 @@ export default function AnnouncementsManager({
                 </div>
                 <div>
                   <Label htmlFor="announcement-priority">Priority</Label>
-                  <select id="announcement-priority" name="priority" defaultValue={editing?.priority ?? "general"} className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm">
+                  <select id="announcement-priority" name="priority" defaultValue={editing?.priority ?? "general"} className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm">
                     <option value="general">General</option>
                     <option value="course">Course update</option>
                     <option value="urgent">Urgent</option>
@@ -310,7 +310,7 @@ export default function AnnouncementsManager({
                 </div>
                 <div>
                   <Label htmlFor="announcement-status">Status</Label>
-                  <select id="announcement-status" name="status" defaultValue={editing?.status ?? "draft"} className="mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-sm">
+                  <select id="announcement-status" name="status" defaultValue={editing?.status ?? "draft"} className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm">
                     <option value="draft">Draft</option>
                     <option value="published">Published / scheduled</option>
                     <option value="archived">Archived</option>
