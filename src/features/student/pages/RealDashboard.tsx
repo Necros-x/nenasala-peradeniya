@@ -217,30 +217,40 @@ export default function RealDashboard({ data }: { data: StudentDashboardData }) 
           <section className="ml-5">
             <h2 className="mb-4 text-xl font-bold text-[var(--color-text-primary)]">Your Stats</h2>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <Card className="p-4">
-                <BookOpen className="mb-2 h-5 w-5 text-[var(--color-info)]" />
-                <p className="text-2xl font-bold text-[var(--color-text-primary)]">{data.courses.length}</p>
-                <p className="text-xs font-medium text-[var(--color-text-muted)]">Enrolled Courses</p>
+              <Card>
+                <div className="p-4">
+                  <BookOpen className="mb-2 h-5 w-5 text-[var(--color-info)]" />
+                  <p className="text-2xl font-bold text-[var(--color-text-primary)]">{data.courses.length}</p>
+                  <p className="text-xs font-medium text-[var(--color-text-muted)]">Enrolled Courses</p>
+                </div>
               </Card>
-              <Card className="p-4">
-                <CheckCircle2 className="mb-2 h-5 w-5 text-[var(--color-success)]" />
-                <p className="text-2xl font-bold text-[var(--color-text-primary)]">{data.completedLessons}/{data.totalLessons}</p>
-                <p className="text-xs font-medium text-[var(--color-text-muted)]">Lessons Completed</p>
+              <Card>
+                <div className="p-4">
+                  <CheckCircle2 className="mb-2 h-5 w-5 text-[var(--color-success)]" />
+                  <p className="text-2xl font-bold text-[var(--color-text-primary)]">{data.completedLessons}/{data.totalLessons}</p>
+                  <p className="text-xs font-medium text-[var(--color-text-muted)]">Lessons Completed</p>
+                </div>
               </Card>
-              <Card className="p-4">
-                <Film className="mb-2 h-5 w-5 text-[var(--color-primary)]" />
-                <p className="text-2xl font-bold text-[var(--color-text-primary)]">{data.completedRecordings}</p>
-                <p className="text-xs font-medium text-[var(--color-text-muted)]">Recordings Watched</p>
+              <Card>
+                <div className="p-4">
+                  <Film className="mb-2 h-5 w-5 text-[var(--color-primary)]" />
+                  <p className="text-2xl font-bold text-[var(--color-text-primary)]">{data.completedRecordings}</p>
+                  <p className="text-xs font-medium text-[var(--color-text-muted)]">Recordings Watched</p>
+                </div>
               </Card>
-              <Card className="p-4">
-                <ClipboardList className="mb-2 h-5 w-5 text-[var(--color-warning)]" />
-                <p className="text-2xl font-bold text-[var(--color-text-primary)]">{data.assignmentsGraded}/{data.assignmentsSubmitted}</p>
-                <p className="text-xs font-medium text-[var(--color-text-muted)]">Assignments Graded</p>
+              <Card>
+                <div className="p-4">
+                  <ClipboardList className="mb-2 h-5 w-5 text-[var(--color-warning)]" />
+                  <p className="text-2xl font-bold text-[var(--color-text-primary)]">{data.assignmentsGraded}/{data.assignmentsSubmitted}</p>
+                  <p className="text-xs font-medium text-[var(--color-text-muted)]">Assignments Graded</p>
+                </div>
               </Card>
-              <Card className="p-4">
-                <Award className="mb-2 h-5 w-5 text-[var(--color-success)]" />
-                <p className="text-2xl font-bold text-[var(--color-text-primary)]">{data.quizzesPassed}/{data.quizAttemptsCompleted}</p>
-                <p className="text-xs font-medium text-[var(--color-text-muted)]">Quizzes Passed</p>
+              <Card>
+                <div className="p-4">
+                  <Award className="mb-2 h-5 w-5 text-[var(--color-success)]" />
+                  <p className="text-2xl font-bold text-[var(--color-text-primary)]">{data.quizzesPassed}/{data.quizAttemptsCompleted}</p>
+                  <p className="text-xs font-medium text-[var(--color-text-muted)]">Quizzes Passed</p>
+                </div>
               </Card>
             </div>
           </section>
