@@ -1,11 +1,9 @@
-import InstructorClasses from "@/features/instructor/pages/InstructorClasses";
-import { getInstructorClasses, getInstructorStudents } from "@/lib/services/instructor-portal";
+import InstructorClassesManager from "@/features/instructor/pages/InstructorClassesManager";
+import { getInstructorTeachingData } from "@/lib/services/instructor-teaching";
 
-export default async function Page() {
-  const [classes, students] = await Promise.all([
-    getInstructorClasses(),
-    getInstructorStudents(),
-  ]);
-
-  return <InstructorClasses classes={classes} students={students} />;
+export default async function Page({ params }: { params: Promise<{ accessKey: string }> }) {
+  const { accessKey } = await params;
+  const data = await getInstructorTeachingData();
+  if (!data) return null;
+  return <InstructorClassesManager data={data} accessKey={accessKey} />;
 }

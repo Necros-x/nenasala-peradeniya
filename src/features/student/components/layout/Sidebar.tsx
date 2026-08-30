@@ -14,7 +14,8 @@ import {
   LogOut,
   X,
   ShoppingBag,
-  Video
+  Video,
+  FolderOpen
 } from 'lucide-react';
 import { cn } from '@/features/student/lib/utils';
 import { Button } from '../ui/Button';
@@ -23,6 +24,7 @@ const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: BookOpen, label: 'My Courses', path: '/courses' },
   { icon: Video, label: 'Recordings', path: '/recordings' },
+  { icon: FolderOpen, label: 'Materials', path: '/materials' },
   { icon: ShoppingBag, label: 'Course Store', path: '/store' },
   { icon: ClipboardList, label: 'Assignments', path: '/assignments' },
   { icon: HelpCircle, label: 'Quizzes', path: '/quizzes' },
