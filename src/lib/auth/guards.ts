@@ -16,6 +16,14 @@ export async function getCurrentIdentity() {
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return null;
 
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("status")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
+  if (profileError || !profile || profile.status !== "active") return null;
+
   const { data: rows, error: roleError } = await supabase
     .from("user_roles")
     .select("role")
@@ -66,6 +74,37 @@ export async function requireRealAdmin() {
   return identity;
 }
 
+export async function requireAdministrationAccess(loginPath: string) {
+  if (isLocalUiBypass()) return { id: "local-ui-preview", roles: ["super_admin"] as PlatformRole[] };
+  if (isAdminDemoEnabled() && (await hasValidDemoSession())) {
+    return { id: "demo-preview", roles: ["super_admin"] as PlatformRole[] };
+  }
+
+  const identity = await getCurrentIdentity();
+  if (!identity) redirect(loginPath);
+
+  const allowed = identity.roles.some(
+    (role) => role === "staff" || role === "admin" || role === "super_admin"
+  );
+  if (!allowed) redirect("/");
+  return identity;
+}
+
+export async function requireRealAdministrationActor() {
+  const identity = await getCurrentIdentity();
+  if (!identity) return null;
+  const allowed = identity.roles.some(
+    (role) => role === "staff" || role === "admin" || role === "super_admin"
+  );
+  return allowed ? identity : null;
+}
+
+export async function requireRealSuperAdmin() {
+  const identity = await getCurrentIdentity();
+  if (!identity?.roles.includes("super_admin")) return null;
+  return identity;
+}
+
 export async function requireInternalAccess(loginPath: string) {
   if (isLocalUiBypass()) return { id: "local-ui-preview", roles: ["super_admin"] as PlatformRole[] };
   if (isAdminDemoEnabled() && (await hasValidDemoSession())) {
@@ -76,7 +115,7 @@ export async function requireInternalAccess(loginPath: string) {
   if (!identity) redirect(loginPath);
 
   const allowed = identity.roles.some(
-    (role) => role === "instructor" || role === "admin" || role === "super_admin"
+    (role) => role === "staff" || role === "instructor" || role === "admin" || role === "super_admin"
   );
   if (!allowed) redirect("/");
   return identity;

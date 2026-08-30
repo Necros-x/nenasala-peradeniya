@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Search,
   Bell,
+  MessageSquare,
 } from "lucide-react";
 import { Card } from "@/features/admin/components/ui/card";
 type PlatformRole = "student" | "instructor" | "staff" | "admin" | "super_admin";
@@ -53,6 +54,13 @@ const portals: Portal[] = [
     roles: ["admin", "super_admin"],
   },
   {
+    title: "COMMUNICATIONS",
+    description: "Website inquiries, support replies and contact handling.",
+    icon: MessageSquare,
+    path: "/messages",
+    roles: ["staff", "admin", "super_admin"],
+  },
+  {
     title: "INSTRUCTOR PORTAL",
     description: "Instructor tools, grading and class management.",
     icon: Presentation,
@@ -71,6 +79,7 @@ export default function ControlCenter({
   const roleSet = new Set(roles);
   const isSuperAdmin = roleSet.has("super_admin");
   const isAdmin = roleSet.has("admin") && !isSuperAdmin;
+  const isStaff = roleSet.has("staff") && !isSuperAdmin && !roleSet.has("admin");
   const isInstructor = roleSet.has("instructor") && !isSuperAdmin && !roleSet.has("admin");
 
   const visiblePortals = portals.filter((portal) =>
@@ -81,19 +90,23 @@ export default function ControlCenter({
     ? "Super Administrator"
     : isAdmin
       ? "Administrator"
-      : isInstructor
-        ? "Instructor"
-        : "Internal User";
+      : isStaff
+        ? "Staff"
+        : isInstructor
+          ? "Instructor"
+          : "Internal User";
 
   const accountRole = isSuperAdmin
     ? "Super Admin"
     : isAdmin
       ? "Admin"
-      : isInstructor
-        ? "Lecturer"
-        : "Internal";
+      : isStaff
+        ? "Staff"
+        : isInstructor
+          ? "Lecturer"
+          : "Internal";
 
-  const initials = isSuperAdmin ? "SA" : isAdmin ? "AD" : isInstructor ? "IN" : "NU";
+  const initials = isSuperAdmin ? "SA" : isAdmin ? "AD" : isStaff ? "ST" : isInstructor ? "IN" : "NU";
 
   const attentionItems = [
     {
@@ -147,7 +160,7 @@ export default function ControlCenter({
           </div>
         </div>
 
-        {!isInstructor && (
+        {!isInstructor && !isStaff && (
           <div className="mx-8 hidden max-w-md flex-1 md:block">
             <div className="group relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
@@ -161,7 +174,7 @@ export default function ControlCenter({
         )}
 
         <div className="flex items-center gap-3">
-          {!isInstructor && (
+          {!isInstructor && !isStaff && (
             <button
               type="button"
               aria-label="Notifications"
@@ -190,11 +203,13 @@ export default function ControlCenter({
           <p className="mt-2 text-sm text-text-muted md:text-base">
             {isInstructor
               ? "Open your Instructor Portal to continue."
-              : "Choose a workspace or review priority items."}
+              : isStaff
+                ? "Open Communications to review and reply to inquiries."
+                : "Choose a workspace or review priority items."}
           </p>
         </header>
 
-        {!isInstructor && (
+        {!isInstructor && !isStaff && (
           <section className="mb-10 md:mb-12">
             <div className="mb-4 flex items-center justify-between gap-4">
               <h2 className="text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">Attention Center</h2>

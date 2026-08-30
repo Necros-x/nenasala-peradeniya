@@ -40,7 +40,7 @@ export function ResetPasswordForm() {
           ? requestedNext
           : null;
 
-      const isInternalUser = roles.has("instructor") || roles.has("admin") || roles.has("super_admin");
+      const isInternalUser = roles.has("staff") || roles.has("instructor") || roles.has("admin") || roles.has("super_admin");
       const destination = safeInternalNext && isInternalUser
         ? safeInternalNext
         : roles.has("student")

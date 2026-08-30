@@ -17,6 +17,7 @@ import {
   Award,
   UserPlus,
   ArrowLeft,
+  MessageSquare,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { Button } from "@/features/admin/components/ui/button";
@@ -56,20 +57,35 @@ const navGroups = [
     ],
   },
   {
+    title: "COMMUNICATION",
+    items: [{ label: "Messages", path: "/messages", icon: MessageSquare }],
+  },
+  {
     title: "SYSTEM",
     items: [{ label: "Settings", path: "/settings", icon: Settings }],
   },
 ];
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+type ShellRole = "student" | "instructor" | "staff" | "admin" | "super_admin";
+
+function SidebarContent({
+  onNavigate,
+  staffOnly,
+}: {
+  onNavigate?: () => void;
+  staffOnly: boolean;
+}) {
   const location = useLocation();
+  const visibleGroups = staffOnly
+    ? navGroups.filter((group) => group.title === "COMMUNICATION")
+    : navGroups;
 
   return (
     <>
       <div className="h-20 flex items-center px-5 border-b border-border">
         <Link to="/" onClick={onNavigate} className="flex items-center min-w-0">
           <img src="/brand/nenasala-logo.png" alt="Nenasala" className="h-10 w-auto max-w-[170px] object-contain" />
-          <span className="sr-only">Nenasala Admin Portal</span>
+          <span className="sr-only">Nenasala Internal Portal</span>
         </Link>
       </div>
 
@@ -85,7 +101,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <div className="flex-1 overflow-y-auto py-5 px-3 space-y-6">
-        {navGroups.map((group) => (
+        {visibleGroups.map((group) => (
           <div key={group.title} className="space-y-1">
             <p className="px-3 mb-2 text-[11px] font-bold tracking-[0.16em] text-text-muted">{group.title}</p>
             {group.items.map((item) => {
@@ -115,10 +131,20 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export function AdminShell({
+  children,
+  roles,
+}: {
+  children: React.ReactNode;
+  roles: ShellRole[];
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const params = useParams<{ accessKey: string }>();
   const router = useRouter();
+  const roleSet = new Set(roles);
+  const staffOnly = roleSet.has("staff") && !roleSet.has("admin") && !roleSet.has("super_admin");
+  const accountLabel = staffOnly ? "Staff" : roleSet.has("super_admin") ? "Super Admin" : "Admin";
+  const accountInitials = staffOnly ? "ST" : roleSet.has("super_admin") ? "SA" : "AD";
 
   async function signOut() {
     try {
@@ -140,7 +166,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       )}
 
       <aside className="hidden lg:flex w-64 shrink-0 border-r border-border bg-surface flex-col sticky top-0 h-screen">
-        <SidebarContent />
+        <SidebarContent staffOnly={staffOnly} />
       </aside>
 
       <aside className={cn(
@@ -150,7 +176,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <button aria-label="Close menu" className="absolute right-3 top-3 p-2 rounded-[var(--radius-sm)] text-text-secondary hover:bg-surface-muted" onClick={() => setMobileOpen(false)}>
           <X className="h-5 w-5" />
         </button>
-        <SidebarContent onNavigate={() => setMobileOpen(false)} />
+        <SidebarContent staffOnly={staffOnly} onNavigate={() => setMobileOpen(false)} />
       </aside>
 
       <div className="min-w-0 flex-1 flex flex-col">
@@ -159,30 +185,38 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <Menu className="h-5 w-5" />
           </Button>
 
-          <div className="relative hidden md:block w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
-            <Input placeholder="Search students, courses, intakes..." className="pl-9 bg-background border-border rounded-[var(--radius-sm)]" />
-          </div>
+          {!staffOnly && (
+            <div className="relative hidden md:block w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+              <Input placeholder="Search students, courses, intakes..." className="pl-9 bg-background border-border rounded-[var(--radius-sm)]" />
+            </div>
+          )}
 
           <div className="ml-auto flex items-center gap-1.5">
             <ThemeMenu />
-            <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
-              <Bell className="h-4 w-4" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-brand-primary" />
-            </Button>
+            {!staffOnly && (
+              <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
+                <Bell className="h-4 w-4" />
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-brand-primary" />
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-9 rounded-[var(--radius-sm)] px-2.5 gap-2">
-                  <span className="grid h-7 w-7 place-items-center rounded-[10px] bg-[var(--color-primary-soft)] text-brand-primary font-bold text-xs">AP</span>
-                  <span className="hidden sm:inline text-sm">Admin</span>
+                  <span className="grid h-7 w-7 place-items-center rounded-[10px] bg-[var(--color-primary-soft)] text-brand-primary font-bold text-xs">{accountInitials}</span>
+                  <span className="hidden sm:inline text-sm">{accountLabel}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Admin account</DropdownMenuLabel>
+                <DropdownMenuLabel>{accountLabel} account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem asChild><Link to="/settings">Settings</Link></DropdownMenuItem>
-                <DropdownMenuSeparator />
+                {!staffOnly && (
+                  <>
+                    <DropdownMenuItem>Profile</DropdownMenuItem>
+                    <DropdownMenuItem asChild><Link to="/settings">Settings</Link></DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem onSelect={signOut} className="text-danger">
                   <LogOut className="mr-2 h-4 w-4" /> Log out
                 </DropdownMenuItem>

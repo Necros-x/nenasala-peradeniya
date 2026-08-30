@@ -39,7 +39,7 @@ export function AdminLoginForm() {
       if (roleError) throw roleError;
 
       const roles = new Set((roleRows ?? []).map((row) => row.role));
-      const allowed = roles.has("instructor") || roles.has("admin") || roles.has("super_admin");
+      const allowed = roles.has("staff") || roles.has("instructor") || roles.has("admin") || roles.has("super_admin");
 
       if (!allowed) {
         await supabase.auth.signOut();
@@ -90,7 +90,7 @@ export function AdminLoginForm() {
               <LockKeyhole className="h-5 w-5" />
             </div>
             <CardTitle>Internal access</CardTitle>
-            <CardDescription>Authorized administrators and instructors only.</CardDescription>
+            <CardDescription>Authorized staff, administrators and instructors only.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={submit} className="space-y-4">
