@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/features/admin/compo
 import { Input } from "@/features/admin/components/ui/input";
 import { Label } from "@/features/admin/components/ui/label";
 import { Badge } from "@/features/admin/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 export default function InstructorsManager({
   instructors,
@@ -29,6 +30,7 @@ export default function InstructorsManager({
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState<AdminInstructorRecord | null>(null);
+  const [deleting, setDeleting] = useState<AdminInstructorRecord | null>(null);
 
   function submitInvite(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,14 +72,6 @@ export default function InstructorsManager({
   }
 
   function removeInstructor(instructor: AdminInstructorRecord) {
-    const classWarning = instructor.assigned_classes.length
-      ? `\n\n${instructor.assigned_classes.length} assigned class(es) will be unassigned.`
-      : "";
-
-    if (!window.confirm(`Delete ${instructor.full_name}'s instructor account?${classWarning}\n\nThis also removes their login.`)) {
-      return;
-    }
-
     const formData = new FormData();
     formData.set("accessKey", accessKey);
     formData.set("instructor_id", instructor.id);
@@ -90,6 +84,7 @@ export default function InstructorsManager({
       }
 
       toast.success("Instructor deleted. You can now invite that email again.");
+      setDeleting(null);
       router.refresh();
     });
   }
@@ -229,7 +224,7 @@ export default function InstructorsManager({
                   <button
                     type="button"
                     disabled={pending || readOnlyDemo}
-                    onClick={() => removeInstructor(instructor)}
+                    onClick={() => setDeleting(instructor)}
                     className="inline-flex items-center gap-1.5 rounded-md border border-danger/30 px-3 py-2 text-xs font-bold text-danger hover:bg-[var(--status-error-soft)] disabled:opacity-50"
                   >
                     <Trash2 className="h-3.5 w-3.5" /> Delete
@@ -240,6 +235,30 @@ export default function InstructorsManager({
           ))
         )}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        title="Delete instructor account?"
+        description={
+          deleting ? (
+            <>
+              <span className="font-semibold text-text-primary">{deleting.full_name}</span> will lose access immediately and their login will be removed.
+              {deleting.assigned_classes.length > 0 && (
+                <span className="mt-2 block rounded-md border border-danger/20 bg-[var(--status-error-soft)] px-3 py-2 text-danger">
+                  {deleting.assigned_classes.length} assigned class{deleting.assigned_classes.length === 1 ? "" : "es"} will be unassigned.
+                </span>
+              )}
+            </>
+          ) : null
+        }
+        confirmLabel="Delete instructor"
+        destructive
+        pending={pending}
+        onClose={() => setDeleting(null)}
+        onConfirm={() => {
+          if (deleting) removeInstructor(deleting);
+        }}
+      />
 
       {editing && (
         <div

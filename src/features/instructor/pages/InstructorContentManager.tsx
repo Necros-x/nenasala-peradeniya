@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { BookOpen, FilePlus2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { InstructorTeachingData, TeachingLesson, TeachingModule } from "@/lib/services/instructor-teaching";
 import {
   deleteTeachingLessonAction,
@@ -97,6 +98,8 @@ function ModuleEditor({
   pending: boolean;
   submit: (action: (formData: FormData) => Promise<{ ok: boolean; error?: string }>, formData: FormData, success: string) => void;
 }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   return (
     <section className="rounded-[var(--radius-lg)] border border-border bg-surface p-1 shadow-sm">
       <div className="rounded-[calc(var(--radius-lg)-4px)] bg-surface-muted p-5">
@@ -123,14 +126,34 @@ function ModuleEditor({
             <textarea name="description" rows={2} defaultValue={module.description ?? ""} className={`${area} md:col-span-2`} />
             <div className="flex gap-2 md:col-span-2">
               <button disabled={pending} className="rounded-md bg-brand-primary px-4 py-2 text-sm font-bold text-[var(--color-static-white)]">Save module</button>
-              <button disabled={pending} type="button" onClick={() => {
-                if (!window.confirm(`Delete module “${module.title}” and all of its lessons?`)) return;
-                const formData = new FormData(); formData.set("id", module.id); formData.set("accessKey", accessKey);
-                submit(deleteTeachingModuleAction, formData, "Module deleted.");
-              }} className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-error)]/30 px-4 py-2 text-sm font-bold text-[var(--color-error)] hover:bg-[var(--color-error-soft)]"><Trash2 className="h-4 w-4" /> Delete</button>
+              <button
+                disabled={pending}
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-danger/30 px-4 py-2 text-sm font-bold text-danger hover:bg-[var(--status-error-soft)]"
+              >
+                <Trash2 className="h-4 w-4" /> Delete
+              </button>
             </div>
           </form>
         </details>
+
+        <ConfirmDialog
+          open={confirmDelete}
+          title="Delete module?"
+          description={<>Deleting <span className="font-semibold text-text-primary">{module.title}</span> will also permanently remove every lesson inside this module.</>}
+          confirmLabel="Delete module"
+          destructive
+          pending={pending}
+          onClose={() => setConfirmDelete(false)}
+          onConfirm={() => {
+            const formData = new FormData();
+            formData.set("id", module.id);
+            formData.set("accessKey", accessKey);
+            submit(deleteTeachingModuleAction, formData, "Module deleted.");
+            setConfirmDelete(false);
+          }}
+        />
 
         <details className="mt-3 rounded-md border border-dashed border-brand-primary/40 bg-background p-4">
           <summary className="cursor-pointer list-none text-sm font-bold text-brand-primary"><span className="inline-flex items-center gap-2"><FilePlus2 className="h-4 w-4" /> Add lesson</span></summary>
@@ -154,6 +177,8 @@ function LessonEditor({ lesson, lessonIndex, accessKey, pending, submit }: {
   pending: boolean;
   submit: (action: (formData: FormData) => Promise<{ ok: boolean; error?: string }>, formData: FormData, success: string) => void;
 }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   return (
     <details className="rounded-md border border-border bg-background p-4">
       <summary className="cursor-pointer list-none">
@@ -166,11 +191,30 @@ function LessonEditor({ lesson, lessonIndex, accessKey, pending, submit }: {
         formData.set("id", lesson.id);
         submit(saveTeachingLessonAction, formData, "Lesson updated.");
       }} />
-      <button disabled={pending} type="button" onClick={() => {
-        if (!window.confirm(`Delete lesson “${lesson.title}”?`)) return;
-        const formData = new FormData(); formData.set("id", lesson.id); formData.set("accessKey", accessKey);
-        submit(deleteTeachingLessonAction, formData, "Lesson deleted.");
-      }} className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[var(--color-error)]"><Trash2 className="h-3.5 w-3.5" /> Delete lesson</button>
+      <button
+        disabled={pending}
+        type="button"
+        onClick={() => setConfirmDelete(true)}
+        className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-danger"
+      >
+        <Trash2 className="h-3.5 w-3.5" /> Delete lesson
+      </button>
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete lesson?"
+        description={<>This will permanently remove <span className="font-semibold text-text-primary">{lesson.title}</span> from the module.</>}
+        confirmLabel="Delete lesson"
+        destructive
+        pending={pending}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={() => {
+          const formData = new FormData();
+          formData.set("id", lesson.id);
+          formData.set("accessKey", accessKey);
+          submit(deleteTeachingLessonAction, formData, "Lesson deleted.");
+          setConfirmDelete(false);
+        }}
+      />
     </details>
   );
 }
