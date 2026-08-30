@@ -1,25 +1,24 @@
-import { BarChart3 } from "lucide-react";
+import AdminAnalytics from "@/features/admin/pages/admin/AdminAnalytics";
+import {
+  getAdminAnalyticsData,
+  type AnalyticsRange,
+} from "@/lib/services/admin-analytics";
 
-export default function Page() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm font-bold uppercase tracking-[0.15em] text-brand-primary">Analytics</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-text-primary">Institution Analytics</h1>
-        <p className="mt-1 text-text-secondary">
-          Reporting and analytics workspace. Real metrics will be connected in the analytics phase.
-        </p>
-      </div>
+export const dynamic = "force-dynamic";
 
-      <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-1 shadow-sm">
-        <div className="rounded-[calc(var(--radius-lg)-4px)] bg-surface-muted p-8 text-center">
-          <BarChart3 className="mx-auto h-8 w-8 text-brand-primary" />
-          <p className="mt-4 font-semibold text-text-primary">Analytics workspace ready</p>
-          <p className="mt-1 text-sm text-text-secondary">
-            This route is protected for Admin and Super Admin accounts.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+const ranges = new Set<AnalyticsRange>([30, 90, 180, 365]);
+
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string }>;
+}) {
+  const params = await searchParams;
+  const requested = Number(params.range);
+  const range = ranges.has(requested as AnalyticsRange)
+    ? (requested as AnalyticsRange)
+    : 90;
+
+  const data = await getAdminAnalyticsData(range);
+  return <AdminAnalytics data={data} />;
 }

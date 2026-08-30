@@ -21,6 +21,15 @@ type Portal = {
   roles: PlatformRole[];
 };
 
+type AttentionData = {
+  pendingEnrollments: number;
+  ungradedSubmissions: number;
+  unassignedClasses: number;
+  closingIntakes: number;
+  scheduledAnnouncements: number;
+  total: number;
+};
+
 const portals: Portal[] = [
   {
     title: "ADMINISTRATION",
@@ -52,7 +61,13 @@ const portals: Portal[] = [
   },
 ];
 
-export default function ControlCenter({ roles }: { roles: PlatformRole[] }) {
+export default function ControlCenter({
+  roles,
+  attention,
+}: {
+  roles: PlatformRole[];
+  attention: AttentionData;
+}) {
   const roleSet = new Set(roles);
   const isSuperAdmin = roleSet.has("super_admin");
   const isAdmin = roleSet.has("admin") && !isSuperAdmin;
@@ -79,6 +94,44 @@ export default function ControlCenter({ roles }: { roles: PlatformRole[] }) {
         : "Internal";
 
   const initials = isSuperAdmin ? "SA" : isAdmin ? "AD" : isInstructor ? "IN" : "NU";
+
+  const attentionItems = [
+    {
+      label: "Enrollments",
+      sub: "Awaiting approval",
+      count: attention.pendingEnrollments,
+      path: "/enrollments",
+      alert: attention.pendingEnrollments > 0,
+    },
+    {
+      label: "Assignments",
+      sub: "Awaiting grading",
+      count: attention.ungradedSubmissions,
+      path: "/lms/assignments",
+      alert: attention.ungradedSubmissions > 0,
+    },
+    {
+      label: "Unassigned Classes",
+      sub: "Need an instructor",
+      count: attention.unassignedClasses,
+      path: "/lms/classes",
+      alert: attention.unassignedClasses > 0,
+    },
+    {
+      label: "Intake Alerts",
+      sub: "Closing within 7 days",
+      count: attention.closingIntakes,
+      path: "/intakes",
+      alert: attention.closingIntakes > 0,
+    },
+    {
+      label: "Announcements",
+      sub: "Scheduled ahead",
+      count: attention.scheduledAnnouncements,
+      path: "/lms/announcements",
+      alert: false,
+    },
+  ];
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-background text-foreground">
@@ -146,22 +199,16 @@ export default function ControlCenter({ roles }: { roles: PlatformRole[] }) {
             <div className="mb-4 flex items-center justify-between gap-4">
               <h2 className="text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">Attention Center</h2>
               <span className="rounded-full bg-[var(--color-primary-soft)] px-2.5 py-1 text-[10px] font-bold text-brand-primary">
-                Priority Items
+                {attention.total} Priority Item{attention.total === 1 ? "" : "s"}
               </span>
             </div>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5 md:gap-4">
-              {[
-                { label: "Enrollments", sub: "Awaiting verification", count: "12", alert: true },
-                { label: "Doc Reviews", sub: "Identity verification", count: "03" },
-                { label: "Cancellations", sub: "Instructor requests", count: "02" },
-                { label: "Assignments", sub: "New submissions", count: "06", neutralAlert: true },
-                { label: "Intake Alerts", sub: "Closing within 48h", count: "01" },
-              ].map((item) => (
-                <Link to="/dashboard" key={item.label} className="block h-full">
+              {attentionItems.map((item) => (
+                <Link to={item.path} key={item.label} className="block h-full">
                   <Card
                     className={`flex h-full flex-col gap-1 rounded-[var(--radius-lg)] border border-border bg-surface p-4 transition-colors hover:border-brand-primary/50 ${
                       item.alert ? "border-l-4 border-l-brand-primary" : ""
-                    } ${item.neutralAlert ? "border-l-4 border-l-border-strong" : ""}`}
+                    }`}
                   >
                     <span className={`text-2xl font-bold ${item.alert ? "text-brand-primary" : "text-foreground"}`}>{item.count}</span>
                     <span className="text-xs font-medium text-text-secondary">{item.label}</span>
