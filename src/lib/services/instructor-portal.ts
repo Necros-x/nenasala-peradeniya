@@ -110,28 +110,40 @@ export async function getCurrentInstructorProfile(): Promise<InstructorProfileRe
     };
   }
 
-  const supabase = await createClient();
-  if (!supabase) return null;
+  const admin = createAdminClient();
 
-  const { data, error } = await supabase
-    .from("instructor_profiles")
-    .select("profile_id,professional_title,profiles(full_name,email,avatar_url)")
-    .eq("profile_id", actor.id)
-    .maybeSingle();
+  const [
+    { data: instructorProfile, error: instructorError },
+    { data: profile, error: profileError },
+  ] = await Promise.all([
+    admin
+      .from("instructor_profiles")
+      .select("professional_title")
+      .eq("profile_id", actor.id)
+      .maybeSingle(),
+    admin
+      .from("profiles")
+      .select("full_name,email,avatar_url")
+      .eq("id", actor.id)
+      .maybeSingle(),
+  ]);
 
-  if (error || !data) {
-    if (error) console.error("Unable to load instructor profile:", error.message);
-    return null;
+  if (instructorError) {
+    console.error("Unable to load instructor profile details:", instructorError.message);
   }
 
-  const profile = firstRelation((data as any).profiles as any) as any;
+  if (profileError) {
+    console.error("Unable to load instructor account profile:", profileError.message);
+  }
 
+  // The instructor role is the access authority. The extended lecturer profile
+  // is optional and must never bounce a valid instructor out of the portal.
   return {
     id: actor.id,
     full_name: profile?.full_name ?? "Instructor",
     email: profile?.email ?? null,
     avatar_url: profile?.avatar_url ?? null,
-    professional_title: data.professional_title ?? null,
+    professional_title: instructorProfile?.professional_title ?? "Instructor",
   };
 }
 

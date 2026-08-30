@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { requireInstructorPortal } from "@/lib/auth/guards";
 import { getCurrentInstructorProfile } from "@/lib/services/instructor-portal";
 import InstructorShell from "@/components/instructor/InstructorShell";
@@ -16,10 +15,16 @@ export default async function Layout({
   const { accessKey } = await params;
   const identity = await requireInstructorPortal(`/internal/${accessKey}/login`);
 
-  const profile = await getCurrentInstructorProfile();
-  if (!profile) redirect(`/internal/${accessKey}`);
-
   const globalView = identity.roles.includes("super_admin");
+  const loadedProfile = await getCurrentInstructorProfile();
+  const profile = loadedProfile ?? {
+    id: identity.id,
+    full_name: globalView ? "Super Administrator" : "Instructor",
+    email: null,
+    avatar_url: null,
+    professional_title: globalView ? "Super Administrator" : "Instructor",
+  };
+
   const basePath = `/internal/${accessKey}/instructor-portal`;
 
   return (
