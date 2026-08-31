@@ -33,6 +33,9 @@ import { cn } from "@/features/admin/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { ThemeMenu } from "@/components/theme/ThemeMenu";
+import { AccountAvatar } from "@/components/account/AccountAvatar";
+import { AdminNotificationMenu } from "@/components/admin/AdminNotificationMenu";
+import { internalRoleLabel, useCurrentInternalAccount } from "@/components/admin/useCurrentInternalAccount";
 
 const navGroups = [
   {
@@ -124,10 +127,16 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function LMSManagementShell({ children }: { children: React.ReactNode }) {
+type ShellRole = "student" | "instructor" | "staff" | "admin" | "super_admin";
+
+export function LMSManagementShell({ children, roles }: { children: React.ReactNode; roles: ShellRole[] }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const params = useParams<{ accessKey: string }>();
   const router = useRouter();
+  const account = useCurrentInternalAccount(roles);
+  const fallbackRole = roles.includes("super_admin") ? "Super Admin" : "Admin";
+  const accountName = account?.fullName ?? fallbackRole;
+  const accountRole = account ? internalRoleLabel(account.roles) : fallbackRole;
 
   async function signOut() {
     try {
@@ -193,22 +202,24 @@ export function LMSManagementShell({ children }: { children: React.ReactNode }) 
             </div>
 
             <ThemeMenu />
+            <AdminNotificationMenu />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-9 gap-2 rounded-[var(--radius-sm)] px-2.5">
-                  <span className="grid h-7 w-7 place-items-center rounded-[10px] bg-[var(--color-primary-soft)] text-xs font-bold text-brand-primary">
-                    AP
-                  </span>
-                  <span className="hidden text-sm sm:inline">Admin</span>
+                  <AccountAvatar name={accountName} avatarUrl={account?.avatarUrl} className="h-7 w-7" textClassName="text-[10px]" />
+                  <span className="hidden max-w-36 truncate text-sm sm:inline">{accountName}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>LMS Management</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel>
+                  <span className="block truncate text-sm text-foreground">{accountName}</span>
+                  <span className="mt-0.5 block truncate text-[11px] font-normal text-text-muted">{account?.email || accountRole}</span>
+                  <span className="mt-1 block text-[10px] font-semibold uppercase tracking-wide text-brand-primary">{accountRole}</span>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/">Control Center</Link>
-                </DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to="/profile">Profile</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to="/">Control Center</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={signOut} className="text-danger">
                   <LogOut className="mr-2 h-4 w-4" /> Log out

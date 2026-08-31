@@ -3,14 +3,15 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
-import { Menu } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { PageTransition } from '@/components/motion/PageTransition';
+import { Toaster } from 'sonner';
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="flex h-screen bg-[var(--color-background)] overflow-hidden">
+      <Toaster position="top-right" richColors />
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
@@ -28,9 +29,9 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       <div className="flex flex-1 flex-col overflow-hidden w-full max-w-full">
         <Topbar onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="max-w-7xl mx-auto">
+          <PageTransition className="mx-auto max-w-7xl">
             {children}
-          </div>
+          </PageTransition>
         </main>
       </div>
     </div>

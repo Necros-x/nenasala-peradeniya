@@ -31,7 +31,7 @@ export function IntroSection() {
               transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
               className="inline-flex text-sm font-semibold tracking-wide text-[var(--color-accent)] mb-6 uppercase"
             >
-              Modern Education
+              A Clearer Way to Learn
             </motion.div>
 
             <motion.h2
@@ -41,9 +41,9 @@ export function IntroSection() {
               transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
               className="text-4xl sm:text-5xl font-extrabold text-[var(--color-text-primary)] leading-tight mb-8"
             >
-              Built For The
+              Learning That Stays
               <br />
-              Next Generation.
+              With You.
             </motion.h2>
 
             <motion.div
@@ -61,9 +61,9 @@ export function IntroSection() {
               transition={{ duration: 0.6, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
               className="text-lg text-[var(--color-text-secondary)] mb-12 max-w-lg leading-relaxed"
             >
-              Designed with smooth visual flow, modern spacing, minimal layouts, and
-              premium educational branding that feels completely different from
-              ordinary coaching websites.
+              From your first class to your final assessment, keep your lessons,
+              materials, recordings and progress together. Spend less time looking
+              for what comes next and more time building skills you can use.
             </motion.p>
 
             <div className="grid grid-cols-2 gap-8">
@@ -73,8 +73,8 @@ export function IntroSection() {
                 viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.6, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
               >
-                <div className="text-4xl font-extrabold text-[var(--color-primary)] mb-2">120+</div>
-                <div className="text-sm font-medium text-[var(--color-text-secondary)]">Expert Mentors</div>
+                <div className="text-2xl font-extrabold text-[var(--color-primary)] mb-2">Hands-on</div>
+                <div className="text-sm font-medium text-[var(--color-text-secondary)]">Practice alongside the theory</div>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -82,8 +82,8 @@ export function IntroSection() {
                 viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.6, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
               >
-                <div className="text-4xl font-extrabold text-[var(--color-primary)] mb-2">35+</div>
-                <div className="text-sm font-medium text-[var(--color-text-secondary)]">Advanced Programs</div>
+                <div className="text-2xl font-extrabold text-[var(--color-primary)] mb-2">Connected</div>
+                <div className="text-sm font-medium text-[var(--color-text-secondary)]">Classes, content and progress in one place</div>
               </motion.div>
             </div>
           </div>

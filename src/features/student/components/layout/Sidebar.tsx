@@ -19,6 +19,10 @@ import {
 } from 'lucide-react';
 import { cn } from '@/features/student/lib/utils';
 import { Button } from '../ui/Button';
+import { BrandLogo } from '@/components/brand/BrandLogo';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
@@ -43,13 +47,25 @@ interface SidebarProps {
 
 export default function Sidebar({ onClose }: SidebarProps) {
   const location = useLocation();
+  const router = useRouter();
+
+  async function signOut() {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.replace("/login");
+      router.refresh();
+    } catch {
+      toast.error("Unable to sign out. Please try again.");
+    }
+  }
 
   return (
     <div className="flex flex-col h-full bg-[var(--color-surface)]">
       <div className="h-16 flex items-center justify-between px-6 border-b border-[var(--color-border)]">
         <div className="flex items-center gap-3 min-w-0">
-          <img src="/brand/nenasala-logo.png" alt="Nenasala" className="h-8 w-auto max-w-[130px] object-contain" />
-          <span className="sr-only">Student LMS Portal</span>
+          <BrandLogo className="h-8 w-auto max-w-[130px]" />
+          <span className="sr-only">Nenasala Student Portal</span>
         </div>
         {onClose && (
           <Button variant="ghost" size="icon" className="md:hidden" onClick={onClose}>
@@ -108,7 +124,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
             <button 
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-[var(--radius-sm)] transition-colors text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-error-soft)] hover:text-[var(--color-error)]"
-              onClick={() => { /* Mock logout */ }}
+              onClick={signOut}
             >
               <LogOut className="w-5 h-5" />
               Logout

@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Bell, CheckCircle2, Mail, Monitor, Moon, Save, ShieldCheck, Sun, User } from "lucide-react";
+import { ArrowRight, Bell, CheckCircle2, Monitor, Moon, Save, ShieldCheck, Sun, User } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import { useTheme } from "@/components/theme/ThemeProvider";
-import { saveStudentSettingsAction } from "@/lib/actions/preferences";
+import { saveStudentPreferencesAction } from "@/lib/actions/preferences";
 import type { CurrentStudentSettings, ThemePreference, UserPreferences } from "@/lib/services/preferences";
 import { Button } from "@/features/student/components/ui/Button";
 import { Card } from "@/features/student/components/ui/Card";
-import { Input } from "@/features/student/components/ui/Input";
 import { Switch } from "@/features/student/components/ui/Switch";
 
 const emailOptions: Array<{
@@ -36,8 +36,6 @@ type Tab = "profile" | "notifications" | "appearance";
 export default function RealSettings({ initialSettings }: { initialSettings: CurrentStudentSettings }) {
   const { theme, setTheme } = useTheme();
   const [tab, setTab] = useState<Tab>("profile");
-  const [fullName, setFullName] = useState(initialSettings.fullName);
-  const [phone, setPhone] = useState(initialSettings.phone);
   const [preferences, setPreferences] = useState<UserPreferences>(initialSettings.preferences);
   const [pending, startTransition] = useTransition();
 
@@ -51,15 +49,13 @@ export default function RealSettings({ initialSettings }: { initialSettings: Cur
 
   function submit() {
     const formData = new FormData();
-    formData.set("full_name", fullName);
-    formData.set("phone", phone);
     formData.set("theme_preference", theme);
     for (const option of emailOptions) {
       if (preferences[option.key]) formData.set(option.field, "on");
     }
 
     startTransition(async () => {
-      const result = await saveStudentSettingsAction(formData);
+      const result = await saveStudentPreferencesAction(formData);
       if (!result.ok) {
         toast.error(result.error ?? "Unable to save settings.");
         return;
@@ -72,7 +68,7 @@ export default function RealSettings({ initialSettings }: { initialSettings: Cur
     <div className="mx-auto max-w-4xl space-y-8 pb-12">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)]">Account Settings</h1>
-        <p className="mt-1 text-[var(--color-text-secondary)]">Manage your profile, email preferences and appearance.</p>
+        <p className="mt-1 text-[var(--color-text-secondary)]">Manage your account details, email preferences and appearance.</p>
       </div>
 
       <div className="flex gap-1 overflow-x-auto border-b border-[var(--color-border)]">
@@ -94,33 +90,21 @@ export default function RealSettings({ initialSettings }: { initialSettings: Cur
 
       {tab === "profile" && (
         <Card className="max-w-2xl">
-          <div className="p-6 sm:p-8">
-            <div className="mb-6 flex items-center gap-4">
+          <div className="p-5 sm:p-6">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
               <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-primary-soft)] text-xl font-bold text-[var(--color-primary)]">
                 {initialSettings.avatarUrl ? <img src={initialSettings.avatarUrl} alt="Profile" className="h-full w-full object-cover" /> : initialSettings.fullName.slice(0, 1).toUpperCase()}
               </div>
-              <div>
-                <h2 className="font-bold text-[var(--color-text-primary)]">Student profile</h2>
-                <p className="text-sm text-[var(--color-text-secondary)]">Basic details used across your learning account.</p>
+              <div className="min-w-0 flex-1">
+                <h2 className="truncate font-bold text-[var(--color-text-primary)]">{initialSettings.fullName}</h2>
+                <p className="mt-1 truncate text-sm text-[var(--color-text-secondary)]">{initialSettings.email}</p>
+                <p className="mt-2 text-sm leading-5 text-[var(--color-text-muted)]">Personal details and enrollment information now live on your dedicated profile page.</p>
               </div>
-            </div>
-            <div className="space-y-5">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-[var(--color-text-primary)]">Full name</label>
-                <Input value={fullName} onChange={(event) => setFullName(event.target.value)} />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-[var(--color-text-primary)]">Email address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
-                  <Input value={initialSettings.email} readOnly className="pl-9 opacity-80" />
-                </div>
-                <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">Your sign-in email is managed by your account credentials.</p>
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-[var(--color-text-primary)]">Phone</label>
-                <Input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Optional phone number" />
-              </div>
+              <Link to="/profile" className="shrink-0">
+                <Button variant="outline" size="sm" className="gap-2">
+                  Manage profile <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
             </div>
           </div>
         </Card>

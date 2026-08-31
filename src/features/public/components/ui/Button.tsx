@@ -14,10 +14,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center rounded-[var(--radius-md)] text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center rounded-[var(--radius-md)] text-sm font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50",
           {
             "bg-[var(--color-accent)] text-[var(--color-static-white)] hover:bg-[var(--color-primary-hover)] hover:text-[var(--color-static-white)]": variant === "primary",
-            "bg-[var(--color-static-white)] text-[var(--color-primary)] border border-[var(--color-border)] hover:bg-[var(--color-background)]": variant === "secondary",
+            "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] hover:border-[var(--color-primary-muted)] hover:bg-[var(--color-surface-elevated)] hover:text-[var(--color-primary)]": variant === "secondary",
             "border border-[var(--color-border)] bg-transparent hover:bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)]": variant === "outline",
             "hover:bg-[var(--color-surface-elevated)] hover:text-[var(--color-text-primary)] text-[var(--color-text-secondary)]": variant === "ghost",
             "bg-[var(--color-error)] text-[var(--color-static-white)] hover:bg-[var(--color-error)]/90": variant === "destructive",

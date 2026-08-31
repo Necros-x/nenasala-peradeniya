@@ -32,7 +32,7 @@ export function ImmersiveLearningSection() {
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="inline-flex text-xs font-bold tracking-widest text-[var(--color-secondary)] mb-6 uppercase px-4 py-1.5 rounded-full bg-[var(--color-brand-dark)]/55 backdrop-blur-sm border border-[var(--color-primary-muted)]/20"
           >
-            Premium Learning Experience
+            Learn Beyond the Classroom
           </motion.div>
 
           <motion.h2
@@ -42,9 +42,9 @@ export function ImmersiveLearningSection() {
             transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
             className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[var(--color-static-white)] leading-tight mb-6"
           >
-            Education That
+            Keep Learning,
             <br />
-            <span className="text-[var(--color-secondary)]">Feels</span> Inspiring.
+            <span className="text-[var(--color-secondary)]">Wherever</span> You Are.
           </motion.h2>
 
           <motion.p
@@ -54,7 +54,7 @@ export function ImmersiveLearningSection() {
             transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
             className="text-lg text-[var(--color-on-brand)]/75 mb-10 max-w-xl leading-relaxed"
           >
-            Clean aesthetics combined with modern layouts, strong typography, and smooth premium website composition.
+            Review materials, recordings, assignments and course updates from one learning space, so it is easier to stay prepared between classes.
           </motion.p>
 
           <motion.div

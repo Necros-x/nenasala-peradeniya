@@ -10,7 +10,6 @@ import {
   GraduationCap,
   Settings,
   Search,
-  Bell,
   LogOut,
   Menu,
   X,
@@ -34,6 +33,9 @@ import { cn } from "@/features/admin/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { ThemeMenu } from "@/components/theme/ThemeMenu";
+import { AccountAvatar } from "@/components/account/AccountAvatar";
+import { AdminNotificationMenu } from "@/components/admin/AdminNotificationMenu";
+import { internalRoleLabel, useCurrentInternalAccount } from "@/components/admin/useCurrentInternalAccount";
 
 const navGroups = [
   {
@@ -143,8 +145,10 @@ export function AdminShell({
   const router = useRouter();
   const roleSet = new Set(roles);
   const staffOnly = roleSet.has("staff") && !roleSet.has("admin") && !roleSet.has("super_admin");
-  const accountLabel = staffOnly ? "Staff" : roleSet.has("super_admin") ? "Super Admin" : "Admin";
-  const accountInitials = staffOnly ? "ST" : roleSet.has("super_admin") ? "SA" : "AD";
+  const fallbackRoleLabel = staffOnly ? "Staff" : roleSet.has("super_admin") ? "Super Admin" : "Admin";
+  const account = useCurrentInternalAccount(roles);
+  const accountName = account?.fullName ?? fallbackRoleLabel;
+  const accountRole = account ? internalRoleLabel(account.roles) : fallbackRoleLabel;
 
   async function signOut() {
     try {
@@ -194,29 +198,24 @@ export function AdminShell({
 
           <div className="ml-auto flex items-center gap-1.5">
             <ThemeMenu />
-            {!staffOnly && (
-              <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
-                <Bell className="h-4 w-4" />
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-brand-primary" />
-              </Button>
-            )}
+            {!staffOnly && <AdminNotificationMenu />}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-9 rounded-[var(--radius-sm)] px-2.5 gap-2">
-                  <span className="grid h-7 w-7 place-items-center rounded-[10px] bg-[var(--color-primary-soft)] text-brand-primary font-bold text-xs">{accountInitials}</span>
-                  <span className="hidden sm:inline text-sm">{accountLabel}</span>
+                  <AccountAvatar name={accountName} avatarUrl={account?.avatarUrl} className="h-7 w-7" textClassName="text-[10px]" />
+                  <span className="hidden max-w-36 truncate sm:inline text-sm">{accountName}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{accountLabel} account</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel>
+                  <span className="block truncate text-sm text-foreground">{accountName}</span>
+                  <span className="mt-0.5 block truncate text-[11px] font-normal text-text-muted">{account?.email || accountRole}</span>
+                  <span className="mt-1 block text-[10px] font-semibold uppercase tracking-wide text-brand-primary">{accountRole}</span>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {!staffOnly && (
-                  <>
-                    <DropdownMenuItem>Profile</DropdownMenuItem>
-                    <DropdownMenuItem asChild><Link to="/settings">Settings</Link></DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
+                <DropdownMenuItem asChild><Link to="/profile">Profile</Link></DropdownMenuItem>
+                {!staffOnly && <DropdownMenuItem asChild><Link to="/settings">Settings</Link></DropdownMenuItem>}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={signOut} className="text-danger">
                   <LogOut className="mr-2 h-4 w-4" /> Log out
                 </DropdownMenuItem>

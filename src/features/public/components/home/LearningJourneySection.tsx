@@ -3,12 +3,12 @@
 import { motion } from "framer-motion";
 
 const steps = [
-  { title: "Explore", desc: "Find a program." },
-  { title: "Enroll", desc: "Secure your spot." },
-  { title: "Learn", desc: "Attend sessions." },
-  { title: "Practice", desc: "Apply skills." },
-  { title: "Complete", desc: "Pass assessments." },
-  { title: "Get Certified", desc: "Start your career." },
+  { title: "Explore", desc: "Choose the course that fits your goal." },
+  { title: "Enroll", desc: "Join an available intake." },
+  { title: "Learn", desc: "Attend classes and follow your lessons." },
+  { title: "Practice", desc: "Use materials, recordings and activities." },
+  { title: "Complete", desc: "Finish the required assessments." },
+  { title: "Get Certified", desc: "Receive your credential when eligible." },
 ];
 
 export function LearningJourneySection() {
@@ -49,7 +49,7 @@ export function LearningJourneySection() {
                 transition={{ duration: 0.4, delay: 0.2 + i * 0.15 }}
                 className="flex lg:flex-col items-center lg:items-center text-left lg:text-center group"
               >
-                <div className="w-12 h-12 rounded-full bg-[var(--color-surface-elevated)] border-2 border-[var(--color-border)] flex items-center justify-center font-bold text-[var(--color-text-secondary)] mb-0 lg:mb-4 group-hover:border-[var(--color-accent)] group-hover:text-[var(--color-accent)] group-hover:scale-110 transition-all duration-300 z-10 bg-[var(--color-static-white)]">
+                <div className="w-12 h-12 rounded-full bg-[var(--color-surface-elevated)] border-2 border-[var(--color-border)] flex items-center justify-center font-bold text-[var(--color-text-secondary)] mb-0 lg:mb-4 group-hover:border-[var(--color-accent)] group-hover:text-[var(--color-accent)] group-hover:scale-110 transition-all duration-300 z-10">
                   {i + 1}
                 </div>
                 <div className="ml-6 lg:ml-0">
