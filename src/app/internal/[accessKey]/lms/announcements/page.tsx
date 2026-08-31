@@ -1,13 +1,11 @@
 import AnnouncementsManager from "@/features/admin/pages/lms/AnnouncementsManager";
-import { hasValidDemoSession, isAdminDemoEnabled } from "@/lib/demo/session";
 import { getAdminAnnouncementOptions, getAdminAnnouncements } from "@/lib/services/announcements";
 
 export default async function Page({ params }: { params: Promise<{ accessKey: string }> }) {
   const { accessKey } = await params;
-  const [announcements, options, demo] = await Promise.all([
+  const [announcements, options] = await Promise.all([
     getAdminAnnouncements(),
     getAdminAnnouncementOptions(),
-    hasValidDemoSession(),
   ]);
 
   return (
@@ -15,7 +13,7 @@ export default async function Page({ params }: { params: Promise<{ accessKey: st
       announcements={announcements}
       options={options}
       accessKey={accessKey}
-      readOnlyDemo={isAdminDemoEnabled() && demo}
+      readOnlyDemo={false}
     />
   );
 }
