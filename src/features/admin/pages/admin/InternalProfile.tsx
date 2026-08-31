@@ -1,16 +1,19 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Mail, Phone, Save, ShieldCheck, UserRound } from "lucide-react";
+import { CalendarDays, Camera, Mail, Phone, Save, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { saveOwnProfileAction } from "@/lib/actions/account-profile";
+import { removeOwnAvatarAction, saveOwnProfileAction } from "@/lib/actions/account-profile";
 import type { AccountProfile, AccountRole } from "@/lib/types/account";
 import { AccountAvatar } from "@/components/account/AccountAvatar";
 import { Button } from "@/features/admin/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/features/admin/components/ui/card";
 import { Input } from "@/features/admin/components/ui/input";
 import { Badge } from "@/features/admin/components/ui/badge";
+
+const MAX_AVATAR_BYTES = 4 * 1024 * 1024;
+const ALLOWED_AVATAR_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 function roleLabel(role: AccountRole) {
   if (role === "super_admin") return "Super Admin";
@@ -29,14 +32,43 @@ function formatDate(value: string | null) {
 
 export default function InternalProfile({ profile }: { profile: AccountProfile }) {
   const router = useRouter();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [fullName, setFullName] = useState(profile.fullName);
   const [phone, setPhone] = useState(profile.phone);
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!avatarFile) {
+      setAvatarPreview(null);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(avatarFile);
+    setAvatarPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [avatarFile]);
+
+  function chooseAvatar(file: File | null) {
+    if (!file) return;
+    if (!ALLOWED_AVATAR_TYPES.has(file.type)) {
+      toast.error("Use a JPG, PNG or WebP profile photo.");
+      return;
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      toast.error("Profile photo must be 4 MB or smaller.");
+      return;
+    }
+    setAvatarFile(file);
+  }
 
   function saveProfile() {
     const formData = new FormData();
     formData.set("full_name", fullName);
     formData.set("phone", phone);
+    if (avatarFile) formData.set("avatar", avatarFile);
 
     startTransition(async () => {
       const result = await saveOwnProfileAction(formData);
@@ -44,11 +76,30 @@ export default function InternalProfile({ profile }: { profile: AccountProfile }
         toast.error(result.error ?? "Unable to save your profile.");
         return;
       }
-      setFullName(result.fullName ?? fullName);
-      setPhone(result.phone ?? phone);
+      setFullName(result.fullName);
+      setPhone(result.phone);
+      setAvatarUrl(result.avatarUrl);
+      setAvatarFile(null);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
       window.dispatchEvent(new Event("nenasala:profile-updated"));
       router.refresh();
       toast.success("Profile updated.");
+    });
+  }
+
+  function removeAvatar() {
+    startTransition(async () => {
+      const result = await removeOwnAvatarAction();
+      if (!result.ok) {
+        toast.error(result.error ?? "Unable to remove your profile photo.");
+        return;
+      }
+      setAvatarUrl(null);
+      setAvatarFile(null);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+      window.dispatchEvent(new Event("nenasala:profile-updated"));
+      router.refresh();
+      toast.success("Profile photo removed.");
     });
   }
 
@@ -62,7 +113,7 @@ export default function InternalProfile({ profile }: { profile: AccountProfile }
 
       <Card className="rounded-[var(--radius-lg)] border-border">
         <CardContent className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center">
-          <AccountAvatar name={fullName} avatarUrl={profile.avatarUrl} className="h-20 w-20" textClassName="text-xl" />
+          <AccountAvatar name={fullName} avatarUrl={avatarPreview ?? avatarUrl} className="h-20 w-20" textClassName="text-xl" />
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-xl font-bold text-foreground">{fullName}</h2>
             <p className="mt-1 truncate text-sm text-text-secondary">{profile.email}</p>
@@ -83,6 +134,33 @@ export default function InternalProfile({ profile }: { profile: AccountProfile }
             </div>
           </CardHeader>
           <CardContent className="space-y-5">
+            <div className="rounded-[var(--radius-md)] border border-border bg-background p-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <AccountAvatar name={fullName} avatarUrl={avatarPreview ?? avatarUrl} className="h-16 w-16" textClassName="text-lg" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-foreground">Profile photo</p>
+                  <p className="mt-1 text-xs text-text-muted">JPG, PNG or WebP. Maximum 4 MB.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(event) => chooseAvatar(event.target.files?.[0] ?? null)}
+                  />
+                  <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => avatarInputRef.current?.click()} disabled={pending}>
+                    <Camera className="h-3.5 w-3.5" /> {avatarUrl || avatarFile ? "Change" : "Add photo"}
+                  </Button>
+                  {(avatarUrl || avatarFile) && (
+                    <Button type="button" variant="danger" size="sm" className="gap-2" onClick={removeAvatar} disabled={pending}>
+                      <Trash2 className="h-3.5 w-3.5" /> Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div>
               <label htmlFor="internal-name" className="text-sm font-medium text-foreground">Full name</label>
               <Input id="internal-name" value={fullName} onChange={(event) => setFullName(event.target.value)} className="mt-1.5" />
@@ -113,7 +191,7 @@ export default function InternalProfile({ profile }: { profile: AccountProfile }
             <CardContent className="p-5">
               <ShieldCheck className="h-5 w-5 text-success" />
               <p className="mt-3 font-semibold text-foreground">Account access</p>
-              <p className="mt-1 text-sm leading-5 text-text-secondary">Permissions are controlled by your assigned role. Role changes are managed separately.</p>
+              <p className="mt-1 text-sm leading-5 text-text-secondary">Permissions are controlled by your assigned role. Role changes are managed separately and cannot be changed from this page.</p>
             </CardContent>
           </Card>
           <Card className="rounded-[var(--radius-lg)] border-border">

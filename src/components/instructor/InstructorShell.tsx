@@ -21,6 +21,7 @@ import {
 import { toast, Toaster } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeMenu } from "@/components/theme/ThemeMenu";
+import { AccountAvatar } from "@/components/account/AccountAvatar";
 import type { InstructorProfileRecord } from "@/lib/services/instructor-portal";
 
 const nav = [
@@ -34,15 +35,6 @@ const nav = [
   { segment: "announcements", label: "Announcements", icon: Megaphone },
   { segment: "progress", label: "Student Progress", icon: BarChart3 },
 ];
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "IN";
-}
 
 export default function InstructorShell({
   children,
@@ -176,16 +168,14 @@ export default function InstructorShell({
 
           <div className="ml-auto flex items-center gap-2">
             <ThemeMenu />
-            <div className="hidden items-center gap-2 rounded-full border border-border bg-background py-1 pl-1 pr-3 sm:flex">
-              {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
-              ) : (
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-[var(--color-primary-soft)] text-xs font-bold text-brand-primary">
-                  {initials(profile.full_name)}
-                </span>
-              )}
+            <Link
+              href={`${basePath}/profile`}
+              className="hidden items-center gap-2 rounded-full border border-border bg-background py-1 pl-1 pr-3 transition-colors hover:bg-surface-muted sm:flex"
+              title="Open profile"
+            >
+              <AccountAvatar name={profile.full_name} avatarUrl={profile.avatar_url} className="h-8 w-8" />
               <span className="max-w-36 truncate text-xs font-semibold text-text-primary">{profile.full_name}</span>
-            </div>
+            </Link>
             <button
               type="button"
               onClick={signOut}

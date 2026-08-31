@@ -198,7 +198,7 @@ export function AdminShell({
 
           <div className="ml-auto flex items-center gap-1.5">
             <ThemeMenu />
-            {!staffOnly && <AdminNotificationMenu />}
+            <AdminNotificationMenu />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-9 rounded-[var(--radius-sm)] px-2.5 gap-2">

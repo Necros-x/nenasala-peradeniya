@@ -91,3 +91,22 @@ export async function getContactMessages(): Promise<ContactMessageRecord[]> {
     replies: repliesByMessage.get(message.id) ?? [],
   }));
 }
+
+
+export async function getNewContactMessageCount(): Promise<number> {
+  const actor = await requireRealAdministrationActor();
+  if (!actor) return 0;
+
+  const admin = createAdminClient();
+  const { count, error } = await admin
+    .from("contact_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "new");
+
+  if (error) {
+    console.error("Unable to count new contact messages:", error.message);
+    return 0;
+  }
+
+  return count ?? 0;
+}

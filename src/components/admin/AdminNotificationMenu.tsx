@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Link } from "react-router-dom";
-import { Bell, CalendarClock, ClipboardCheck, GraduationCap, Megaphone, UserPlus } from "lucide-react";
+import { Bell, CalendarClock, ClipboardCheck, GraduationCap, Megaphone, MessageSquareText, UserPlus } from "lucide-react";
 import { getAdminAttentionAction } from "@/lib/actions/admin/attention";
 import { Button } from "@/features/admin/components/ui/button";
 
@@ -12,6 +12,7 @@ export type AdminAttentionSnapshot = {
   unassignedClasses: number;
   closingIntakes: number;
   scheduledAnnouncements: number;
+  newContactMessages: number;
   total: number;
 };
 
@@ -21,6 +22,7 @@ const emptyAttention: AdminAttentionSnapshot = {
   unassignedClasses: 0,
   closingIntakes: 0,
   scheduledAnnouncements: 0,
+  newContactMessages: 0,
   total: 0,
 };
 
@@ -57,6 +59,7 @@ export function AdminNotificationMenu() {
   }, [open]);
 
   const items = [
+    { label: "New contact messages", detail: "Waiting in the contact inbox", count: attention.newContactMessages, path: "/messages", icon: MessageSquareText },
     { label: "Pending enrollments", detail: "Waiting for review", count: attention.pendingEnrollments, path: "/enrollments", icon: UserPlus },
     { label: "Assignments to grade", detail: "Submitted or late", count: attention.ungradedSubmissions, path: "/lms/assignments", icon: ClipboardCheck },
     { label: "Unassigned classes", detail: "Need an instructor", count: attention.unassignedClasses, path: "/lms/classes", icon: GraduationCap },
@@ -70,7 +73,7 @@ export function AdminNotificationMenu() {
         variant="ghost"
         size="icon"
         className="relative"
-        aria-label={attention.total > 0 ? `Admin alerts, ${attention.total} items` : "Admin alerts"}
+        aria-label={attention.total > 0 ? `Operational alerts, ${attention.total} items` : "Operational alerts"}
         onClick={() => {
           const next = !open;
           setOpen(next);
