@@ -20,7 +20,7 @@ export function internalRoleLabel(roles: AccountRole[]) {
   if (roles.includes("super_admin")) return "Super Admin";
   if (roles.includes("admin")) return "Admin";
   if (roles.includes("staff")) return "Staff";
-  if (roles.includes("instructor")) return "Instructor";
+  if (roles.includes("instructor")) return "Lecturer";
   return "Internal User";
 }
 

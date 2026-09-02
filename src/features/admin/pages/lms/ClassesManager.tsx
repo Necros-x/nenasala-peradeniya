@@ -119,7 +119,7 @@ export default function ClassesManager({ classes, intakes, programmes, courses, 
         <div>
           <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-brand-primary">LMS Management</p>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Classes</h1>
-          <p className="mt-1 text-text-secondary">Connect an intake to a course, instructor and teaching period.</p>
+          <p className="mt-1 text-text-secondary">Connect an intake to a course, lecturer and teaching period.</p>
         </div>
         <Button onClick={beginCreate} disabled={readOnlyDemo || intakes.length === 0}>
           <Plus className="mr-2 h-4 w-4" /> New Class
@@ -171,7 +171,7 @@ export default function ClassesManager({ classes, intakes, programmes, courses, 
                   </div>
                   <div className="flex items-center gap-2 text-text-secondary">
                     <UserRound className="h-4 w-4 text-brand-primary" />
-                    <span>{item.instructor_name ?? "Instructor not assigned"}</span>
+                    <span>{item.instructor_name ?? "Lecturer not assigned"}</span>
                   </div>
                   <p className="text-xs text-text-muted">
                     {formatDate(item.start_date)}{item.end_date ? ` – ${formatDate(item.end_date)}` : ""}
@@ -238,7 +238,7 @@ export default function ClassesManager({ classes, intakes, programmes, courses, 
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="class-instructor">Instructor</Label>
+                <Label htmlFor="class-instructor">Lecturer</Label>
                 <select
                   id="class-instructor"
                   name="instructor_id"

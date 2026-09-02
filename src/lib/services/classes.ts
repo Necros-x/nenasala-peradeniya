@@ -93,7 +93,7 @@ export async function getAdminInstructorOptions(): Promise<InstructorOption[]> {
     const profile = firstRelation(row.profiles as any) as any;
     return {
       id: row.profile_id,
-      name: profile?.full_name ?? "Instructor",
+      name: profile?.full_name ?? "Lecturer",
     };
   });
 }

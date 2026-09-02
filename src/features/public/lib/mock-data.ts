@@ -181,7 +181,7 @@ export const TESTIMONIALS: Testimonial[] = [
     id: "t1",
     name: "James Wilson",
     courseId: "c1",
-    testimonial: "The Cyber Security Fundamentals course completely changed my career trajectory. The instructors were incredibly knowledgeable and the practical labs prepared me for the real world.",
+    testimonial: "The Cyber Security Fundamentals course completely changed my career trajectory. The lecturers were incredibly knowledgeable and the practical labs prepared me for the real world.",
     rating: 5,
     photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400"
   },
@@ -189,7 +189,7 @@ export const TESTIMONIALS: Testimonial[] = [
     id: "t2",
     name: "Priya Patel",
     courseId: "c2",
-    testimonial: "I passed my CCNA on the first try after taking this course! Michael is a fantastic instructor who breaks down complex subnetting into easy-to-understand concepts.",
+    testimonial: "I passed my CCNA on the first try after taking this course! Michael is a fantastic lecturer who breaks down complex subnetting into easy-to-understand concepts.",
     rating: 5,
     photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400"
   }

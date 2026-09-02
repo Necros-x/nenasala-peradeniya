@@ -40,7 +40,7 @@ export default function InstructorsManager({
     startTransition(async () => {
       const result = await registerInstructorAction(formData);
       if (!result.ok) {
-        toast.error(result.error ?? "Unable to invite instructor.");
+        toast.error(result.error ?? "Unable to invite lecturer.");
         return;
       }
 
@@ -61,11 +61,11 @@ export default function InstructorsManager({
     startTransition(async () => {
       const result = await updateInstructorAction(formData);
       if (!result.ok) {
-        toast.error(result.error ?? "Unable to update instructor.");
+        toast.error(result.error ?? "Unable to update lecturer.");
         return;
       }
 
-      toast.success("Instructor updated.");
+      toast.success("Lecturer updated.");
       setEditing(null);
       router.refresh();
     });
@@ -79,11 +79,11 @@ export default function InstructorsManager({
     startTransition(async () => {
       const result = await deleteInstructorAction(formData);
       if (!result.ok) {
-        toast.error(result.error ?? "Unable to delete instructor.");
+        toast.error(result.error ?? "Unable to delete lecturer.");
         return;
       }
 
-      toast.success("Instructor deleted. You can now invite that email again.");
+      toast.success("Lecturer deleted. You can now invite that email again.");
       setDeleting(null);
       router.refresh();
     });
@@ -92,9 +92,9 @@ export default function InstructorsManager({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-text-primary">Instructors</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-text-primary">Lecturers</h1>
         <p className="mt-1 text-sm text-text-secondary">
-          Invite lecturers, edit accounts, or remove old instructor logins. Class assignment stays in LMS Management → Classes.
+          Invite lecturers, edit accounts, or remove old lecturer logins. Class assignment stays in LMS Management → Classes.
         </p>
       </div>
 
@@ -102,7 +102,7 @@ export default function InstructorsManager({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5 text-brand-primary" />
-            Invite instructor
+            Invite lecturer
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -121,7 +121,7 @@ export default function InstructorsManager({
             </div>
             <div>
               <Label htmlFor="instructor-title">Professional title</Label>
-              <Input id="instructor-title" name="professional_title" className="mt-2" placeholder="e.g. Network Instructor" />
+              <Input id="instructor-title" name="professional_title" className="mt-2" placeholder="e.g. Network Lecturer" />
             </div>
             <div>
               <Label htmlFor="instructor-qualifications">Qualifications</Label>
@@ -140,17 +140,17 @@ export default function InstructorsManager({
                 name="bio"
                 rows={3}
                 className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-text-primary outline-none focus:ring-1 focus:ring-brand-primary"
-                placeholder="Short instructor biography"
+                placeholder="Short lecturer biography"
               />
             </div>
             <label className="flex items-center gap-2 text-sm font-medium text-text-primary md:col-span-2">
               <input name="is_public" type="checkbox" className="h-4 w-4 accent-[var(--color-primary)]" />
-              Show this instructor on the public instructors page
+              Show this lecturer on the public lecturers page
             </label>
             <div className="md:col-span-2">
               <Button type="submit" disabled={pending || readOnlyDemo}>
                 <Mail className="mr-2 h-4 w-4" />
-                {pending ? "Sending invitation..." : readOnlyDemo ? "Demo is read-only" : "Invite instructor with Resend"}
+                {pending ? "Sending invitation..." : readOnlyDemo ? "Demo is read-only" : "Invite lecturer with Resend"}
               </Button>
             </div>
           </form>
@@ -162,7 +162,7 @@ export default function InstructorsManager({
           <Card className="lg:col-span-2">
             <CardContent className="py-12 pt-12 text-center">
               <UsersRound className="mx-auto h-8 w-8 text-text-muted" />
-              <p className="mt-3 font-semibold text-text-primary">No instructors yet</p>
+              <p className="mt-3 font-semibold text-text-primary">No lecturers yet</p>
               <p className="mt-1 text-sm text-text-secondary">Invite the first lecturer using the form above.</p>
             </CardContent>
           </Card>
@@ -173,7 +173,7 @@ export default function InstructorsManager({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h2 className="truncate text-lg font-bold text-text-primary">{instructor.full_name}</h2>
-                    <p className="mt-1 text-sm text-text-secondary">{instructor.professional_title ?? "Instructor"}</p>
+                    <p className="mt-1 text-sm text-text-secondary">{instructor.professional_title ?? "Lecturer"}</p>
                     <p className="mt-2 flex items-center gap-1.5 text-xs text-text-muted">
                       <Mail className="h-3.5 w-3.5" /> {instructor.email ?? "No email"}
                     </p>
@@ -238,7 +238,7 @@ export default function InstructorsManager({
 
       <ConfirmDialog
         open={Boolean(deleting)}
-        title="Delete instructor account?"
+        title="Delete lecturer account?"
         description={
           deleting ? (
             <>
@@ -251,7 +251,7 @@ export default function InstructorsManager({
             </>
           ) : null
         }
-        confirmLabel="Delete instructor"
+        confirmLabel="Delete lecturer"
         destructive
         pending={pending}
         onClose={() => setDeleting(null)}
@@ -272,7 +272,7 @@ export default function InstructorsManager({
             <form onSubmit={submitEdit} className="rounded-[calc(var(--radius-lg)-4px)] bg-background p-5 md:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-bold text-text-primary">Edit instructor</h2>
+                  <h2 className="text-xl font-bold text-text-primary">Edit lecturer</h2>
                   <p className="mt-1 text-sm text-text-secondary">Update login identity and lecturer profile details.</p>
                 </div>
                 <button
@@ -333,7 +333,7 @@ export default function InstructorsManager({
                 </div>
                 <label className="flex items-center gap-2 text-sm font-medium text-text-primary md:col-span-2">
                   <input name="is_public" type="checkbox" defaultChecked={editing.is_public} className="h-4 w-4 accent-[var(--color-primary)]" />
-                  Show on public instructors page
+                  Show on public lecturers page
                 </label>
               </div>
 

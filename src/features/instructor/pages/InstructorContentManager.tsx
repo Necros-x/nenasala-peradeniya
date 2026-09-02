@@ -33,7 +33,7 @@ export default function InstructorContentManager({ data, accessKey }: { data: In
   }
 
   if (data.courses.length === 0) {
-    return <Empty text="No courses are assigned to this instructor yet. An admin must assign the first class before course content can be edited." />;
+    return <Empty text="No courses are assigned to this lecturer yet. An admin must assign the first class before course content can be edited." />;
   }
 
   return (

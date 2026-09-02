@@ -21,6 +21,7 @@ export default async function Page({
       users={users}
       accessKey={accessKey}
       canManage={canManage}
+      currentUserId={identity.id}
     />
   );
 }

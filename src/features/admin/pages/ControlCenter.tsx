@@ -64,8 +64,8 @@ const portals: Portal[] = [
     roles: ["staff", "admin", "super_admin"],
   },
   {
-    title: "INSTRUCTOR PORTAL",
-    description: "Instructor tools, grading and class management.",
+    title: "LECTURER PORTAL",
+    description: "Lecturer tools, grading and class management.",
     icon: Presentation,
     path: "/instructor-portal",
     roles: ["instructor", "super_admin"],
@@ -97,7 +97,7 @@ export default function ControlCenter({
       : isStaff
         ? "Staff"
         : isInstructor
-          ? "Instructor"
+          ? "Lecturer"
           : "Internal User";
   const accountName = account?.fullName ?? fallbackAccountName;
 
@@ -129,7 +129,7 @@ export default function ControlCenter({
     },
     {
       label: "Unassigned Classes",
-      sub: "Need an instructor",
+      sub: "Need a lecturer",
       count: attention.unassignedClasses,
       path: "/lms/classes",
       alert: attention.unassignedClasses > 0,
@@ -191,7 +191,7 @@ export default function ControlCenter({
           <h1 className="text-3xl font-light text-text-secondary md:text-4xl">Control Center</h1>
           <p className="mt-2 text-sm text-text-muted md:text-base">
             {isInstructor
-              ? "Open your Instructor Portal to continue."
+              ? "Open your Lecturer Portal to continue."
               : isStaff
                 ? "Open Communications to review and reply to inquiries."
                 : "Choose a workspace or review priority items."}

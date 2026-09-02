@@ -22,7 +22,7 @@ export function Footer() {
             <ul className="mt-4 space-y-3">
               <li><Link to="/courses" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">Courses</Link></li>
               <li><Link to="/intakes" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">Intakes</Link></li>
-              <li><Link to="/instructors" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">Instructors</Link></li>
+              <li><Link to="/instructors" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">Lecturers</Link></li>
             </ul>
           </div>
           

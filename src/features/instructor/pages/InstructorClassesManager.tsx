@@ -36,12 +36,12 @@ export default function InstructorClassesManager({ data, accessKey }: { data: In
           <div className="md:col-span-2 xl:col-span-3 flex items-center gap-2"><Plus className="h-5 w-5 text-brand-primary" /><h2 className="text-lg font-bold text-text-primary">Add class</h2></div>
           <Select label="Course" name="course_id" value={courseId} onChange={setCourseId} options={data.courses.map((row) => ({ value: row.id, label: row.title }))} />
           <Select label="Intake" name="intake_id" options={compatibleIntakes.map((row) => ({ value: row.id, label: row.name }))} />
-          {data.isSuperAdmin && <Select label="Instructor" name="instructor_id" options={[{ value: "", label: "Unassigned" }, ...data.instructors.map((row) => ({ value: row.id, label: row.full_name }))]} />}
+          {data.isSuperAdmin && <Select label="Lecturer" name="instructor_id" options={[{ value: "", label: "Unassigned" }, ...data.instructors.map((row) => ({ value: row.id, label: row.full_name }))]} />}
           <Input label="Class name" name="name" required />
           <Input label="Start date" name="start_date" type="date" />
           <Input label="End date" name="end_date" type="date" />
           <Select label="Status" name="status" options={["draft","scheduled","active","completed","cancelled"].map((value) => ({ value, label: value[0].toUpperCase()+value.slice(1) }))} defaultValue="scheduled" />
-          <div className="md:col-span-2 xl:col-span-3"><button disabled={pending || data.courses.length === 0 || compatibleIntakes.length === 0} className="rounded-md bg-brand-primary px-4 py-2.5 text-sm font-bold text-[var(--color-static-white)] disabled:opacity-50">Create class</button><p className="mt-2 text-xs text-text-muted">Instructors can create another class only for a course they already teach. Super Admin can create any class.</p></div>
+          <div className="md:col-span-2 xl:col-span-3"><button disabled={pending || data.courses.length === 0 || compatibleIntakes.length === 0} className="rounded-md bg-brand-primary px-4 py-2.5 text-sm font-bold text-[var(--color-static-white)] disabled:opacity-50">Create class</button><p className="mt-2 text-xs text-text-muted">Lecturers can create another class only for a course they already teach. Super Admin can create any class.</p></div>
         </form>
       </section>
 
@@ -65,7 +65,7 @@ function ClassCard({ row, data, pending, save }: { row: TeachingClass; data: Ins
           <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={(event) => { event.preventDefault(); const formData = new FormData(event.currentTarget); formData.set("id", row.id); save(formData, "Class updated."); }}>
             <Select label="Course" name="course_id" value={courseId} onChange={setCourseId} options={data.courses.map((item) => ({ value: item.id, label: item.title }))} />
             <Select label="Intake" name="intake_id" defaultValue={row.intake_id} options={intakes.map((item) => ({ value: item.id, label: item.name }))} />
-            {data.isSuperAdmin && <Select label="Instructor" name="instructor_id" defaultValue={row.instructor_id ?? ""} options={[{ value: "", label: "Unassigned" }, ...data.instructors.map((item) => ({ value: item.id, label: item.full_name }))]} />}
+            {data.isSuperAdmin && <Select label="Lecturer" name="instructor_id" defaultValue={row.instructor_id ?? ""} options={[{ value: "", label: "Unassigned" }, ...data.instructors.map((item) => ({ value: item.id, label: item.full_name }))]} />}
             <Input label="Class name" name="name" required defaultValue={row.name} />
             <Input label="Start date" name="start_date" type="date" defaultValue={row.start_date ?? ""} />
             <Input label="End date" name="end_date" type="date" defaultValue={row.end_date ?? ""} />

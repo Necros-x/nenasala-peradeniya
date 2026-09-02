@@ -110,7 +110,7 @@ export default function LMSDashboard() {
                 <TableRow>
                   <TableHead>Class</TableHead>
                   <TableHead>Date & Time</TableHead>
-                  <TableHead>Instructor</TableHead>
+                  <TableHead>Lecturer</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

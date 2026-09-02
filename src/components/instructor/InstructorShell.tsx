@@ -75,9 +75,9 @@ export default function InstructorShell({
       </div>
 
       <div className="border-b border-border px-5 py-4">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-primary">Instructor Portal</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-primary">Lecturer Portal</p>
         <p className="mt-1 truncate text-sm font-semibold text-text-primary">{profile.full_name}</p>
-        <p className="truncate text-xs text-text-muted">{profile.professional_title ?? "Instructor"}</p>
+        <p className="truncate text-xs text-text-muted">{profile.professional_title ?? "Lecturer"}</p>
       </div>
 
       <div className="border-b border-border px-3 py-3">
@@ -158,10 +158,10 @@ export default function InstructorShell({
           </button>
 
           <div>
-            <p className="text-sm font-bold text-text-primary">Instructor Workspace</p>
+            <p className="text-sm font-bold text-text-primary">Lecturer Workspace</p>
             <p className="hidden text-xs text-text-muted sm:block">
               {globalView
-                ? "Super Admin view of all instructor-side data."
+                ? "Super Admin view of all lecturer-side data."
                 : "Only your assigned classes and students are shown."}
             </p>
           </div>

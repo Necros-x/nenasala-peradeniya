@@ -59,7 +59,7 @@ async function context(formData: FormData) {
   const accessKey = text(formData, "accessKey");
   if (!isValidAdminAccessKey(accessKey)) return { error: "Invalid internal route." } as const;
   const actor = await requireRealInstructorPortalActor();
-  if (!actor) return { error: "Instructor Portal access is required." } as const;
+  if (!actor) return { error: "Lecturer Portal access is required." } as const;
   return {
     accessKey,
     actor,

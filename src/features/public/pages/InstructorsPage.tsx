@@ -29,7 +29,7 @@ export function InstructorsPage() {
                 transition={{ duration: 0.6 }}
                 className="text-sm font-bold text-[var(--color-accent)] uppercase tracking-widest mb-6"
               >
-                Meet Your Instructors
+                Meet Your Lecturers
               </motion.div>
               
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-[var(--color-text-primary)] leading-[1.1] mb-8">
@@ -62,7 +62,7 @@ export function InstructorsPage() {
             >
               <img 
                 src="https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=1200" 
-                alt="Instructor in a classroom"
+                alt="Lecturer in a classroom"
                 className="w-full h-full object-cover"
               />
             </motion.div>
@@ -90,7 +90,7 @@ export function InstructorsPage() {
                transition={{ duration: 0.6, delay: 0.2 }}
                className="text-xl text-[var(--color-text-secondary)] max-w-2xl mx-auto leading-relaxed"
             >
-               Our instructors combine technical knowledge with practical experience to help students understand how skills are applied beyond the classroom.
+               Our lecturers combine technical knowledge with practical experience to help students understand how skills are applied beyond the classroom.
             </motion.p>
          </div>
       </section>
@@ -110,7 +110,7 @@ export function InstructorsPage() {
                    <img src="https://images.unsplash.com/photo-1580894732444-8ecbef79c139?auto=format&fit=crop&q=80&w=1000" alt="Sarah Jenkins" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-8 md:p-12 lg:p-16 flex flex-col justify-center">
-                   <div className="text-sm font-bold text-[var(--color-accent)] uppercase tracking-widest mb-4">Lead Instructor</div>
+                   <div className="text-sm font-bold text-[var(--color-accent)] uppercase tracking-widest mb-4">Lead Lecturer</div>
                    <h3 className="text-3xl sm:text-4xl font-extrabold text-[var(--color-text-primary)] mb-4">Sarah Jenkins</h3>
                    <div className="flex flex-wrap gap-2 mb-8">
                       <span className="px-3 py-1 bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-full text-sm font-bold text-[var(--color-text-secondary)]">Web Development</span>
@@ -179,7 +179,7 @@ export function InstructorsPage() {
                  transition={{ duration: 0.6 }}
               >
                  <div className="text-6xl sm:text-7xl font-extrabold text-[var(--color-primary)] mb-4"><Counter value={10} suffix="+" /></div>
-                 <div className="text-xl font-bold text-[var(--color-text-primary)]">Expert Instructors</div>
+                 <div className="text-xl font-bold text-[var(--color-text-primary)]">Expert Lecturers</div>
               </motion.div>
               <motion.div 
                  initial={{ opacity: 0, y: 20 }}
@@ -210,7 +210,7 @@ export function InstructorsPage() {
                  transition={{ duration: 0.8 }}
                  className="aspect-[4/3] rounded-[var(--radius-xl)] overflow-hidden shadow-lg order-2 lg:order-1"
               >
-                 <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=1200" alt="Instructor teaching" className="w-full h-full object-cover" />
+                 <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=1200" alt="Lecturer teaching" className="w-full h-full object-cover" />
               </motion.div>
               
               <div className="order-1 lg:order-2">

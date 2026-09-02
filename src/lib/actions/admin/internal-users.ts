@@ -45,15 +45,63 @@ async function portalOrigin() {
   return configuredSite ?? requestOrigin ?? (host ? `${forwardedProto}://${host}` : null) ?? "http://localhost:3000";
 }
 
-async function targetIsSuperAdmin(userId: string) {
+async function targetSuperAdminState(userId: string) {
   const admin = createAdminClient();
-  const { data } = await admin
+  const [roleResult, profileResult] = await Promise.all([
+    admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "super_admin")
+      .maybeSingle(),
+    admin
+      .from("profiles")
+      .select("status")
+      .eq("id", userId)
+      .maybeSingle(),
+  ]);
+
+  if (roleResult.error || profileResult.error) {
+    console.error(
+      "Unable to inspect Super Admin account safety:",
+      roleResult.error ?? profileResult.error,
+    );
+    return null;
+  }
+
+  return {
+    isSuperAdmin: Boolean(roleResult.data),
+    isActive: profileResult.data?.status === "active",
+  };
+}
+
+async function activeSuperAdminCount() {
+  const admin = createAdminClient();
+  const { data: roleRows, error: roleError } = await admin
     .from("user_roles")
-    .select("role")
-    .eq("user_id", userId)
-    .eq("role", "super_admin")
-    .maybeSingle();
-  return Boolean(data);
+    .select("user_id")
+    .eq("role", "super_admin");
+
+  if (roleError) {
+    console.error("Unable to load Super Admin roles:", roleError);
+    return null;
+  }
+
+  const userIds = [...new Set((roleRows ?? []).map((row) => row.user_id))];
+  if (userIds.length === 0) return 0;
+
+  const { count, error: profileError } = await admin
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .in("id", userIds)
+    .eq("status", "active");
+
+  if (profileError) {
+    console.error("Unable to count active Super Admin accounts:", profileError);
+    return null;
+  }
+
+  return count ?? 0;
 }
 
 export async function inviteInternalUserAction(
@@ -72,8 +120,8 @@ export async function inviteInternalUserAction(
 
   if (fullName.length < 2) return { ok: false, error: "Full name is required." };
   if (!validEmail(email)) return { ok: false, error: "Enter a valid email address." };
-  if (!["staff", "admin"].includes(role)) {
-    return { ok: false, error: "Only Staff or Admin accounts can be created here." };
+  if (!["staff", "admin", "super_admin"].includes(role)) {
+    return { ok: false, error: "Only Staff, Admin or Super Admin accounts can be created here." };
   }
   if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
     return { ok: false, error: "Resend is not configured. Internal invitations require Resend." };
@@ -131,9 +179,11 @@ export async function inviteInternalUserAction(
       name: fullName,
       title: "Your Nenasala internal account is ready",
       message:
-        role === "admin"
-          ? "You have been invited as an Administrator. Set your password to access the Administration, LMS Management and Analytics workspaces."
-          : "You have been invited as Nenasala Staff. Set your password to access the internal Communications workspace.",
+        role === "super_admin"
+          ? "You have been invited as a Super Administrator. Set your password to access all Nenasala management workspaces and privileged account controls."
+          : role === "admin"
+            ? "You have been invited as an Administrator. Set your password to access the Administration, LMS Management and Analytics workspaces."
+            : "You have been invited as Nenasala Staff. Set your password to access the internal Communications workspace.",
       actionLabel: "Set up account",
       actionUrl: actionLink,
     });
@@ -183,14 +233,26 @@ export async function updateInternalUserAction(
   const status = text(formData, "status");
 
   if (!userId) return { ok: false, error: "Missing internal user." };
-  if (await targetIsSuperAdmin(userId)) {
-    return { ok: false, error: "Super Admin accounts cannot be modified from this screen." };
-  }
   if (fullName.length < 2) return { ok: false, error: "Full name is required." };
   if (!validEmail(email)) return { ok: false, error: "Enter a valid email address." };
-  if (!["staff", "admin"].includes(role)) return { ok: false, error: "Invalid role." };
+  if (!["staff", "admin", "super_admin"].includes(role)) return { ok: false, error: "Invalid role." };
   if (!["active", "inactive", "suspended"].includes(status)) {
     return { ok: false, error: "Invalid account status." };
+  }
+
+  const targetState = await targetSuperAdminState(userId);
+  if (!targetState) return { ok: false, error: "Unable to verify Super Admin safety." };
+
+  if (userId === actor.id && (role !== "super_admin" || status !== "active")) {
+    return { ok: false, error: "You cannot change your own Super Admin role or deactivate your own account." };
+  }
+
+  if (targetState.isSuperAdmin && targetState.isActive && (role !== "super_admin" || status !== "active")) {
+    const count = await activeSuperAdminCount();
+    if (count === null) return { ok: false, error: "Unable to verify Super Admin safety." };
+    if (count <= 1) {
+      return { ok: false, error: "The last active Super Admin cannot be downgraded or deactivated." };
+    }
   }
 
   const admin = createAdminClient();
@@ -211,7 +273,7 @@ export async function updateInternalUserAction(
     .from("user_roles")
     .delete()
     .eq("user_id", userId)
-    .in("role", ["staff", "admin"]);
+    .in("role", ["staff", "admin", "super_admin"]);
   if (deleteRoleError) return { ok: false, error: deleteRoleError.message };
 
   const { error: roleError } = await admin
@@ -243,8 +305,15 @@ export async function deleteInternalUserAction(
   const userId = text(formData, "user_id");
   if (!userId) return { ok: false, error: "Missing internal user." };
   if (userId === actor.id) return { ok: false, error: "You cannot delete your own account." };
-  if (await targetIsSuperAdmin(userId)) {
-    return { ok: false, error: "Super Admin accounts cannot be deleted from this screen." };
+  const targetState = await targetSuperAdminState(userId);
+  if (!targetState) return { ok: false, error: "Unable to verify Super Admin safety." };
+
+  if (targetState.isSuperAdmin && targetState.isActive) {
+    const count = await activeSuperAdminCount();
+    if (count === null) return { ok: false, error: "Unable to verify Super Admin safety." };
+    if (count <= 1) {
+      return { ok: false, error: "The last active Super Admin account cannot be deleted." };
+    }
   }
 
   const admin = createAdminClient();

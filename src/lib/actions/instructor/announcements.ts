@@ -16,7 +16,7 @@ export async function createInstructorAnnouncementAction(
   formData: FormData
 ): Promise<InstructorAnnouncementActionResult> {
   const actor = await requireRealInstructorPortalActor();
-  if (!actor) return { ok: false, error: "Instructor Portal access is required." };
+  if (!actor) return { ok: false, error: "Lecturer Portal access is required." };
 
   const isSuperAdmin = actor.roles.includes("super_admin");
 

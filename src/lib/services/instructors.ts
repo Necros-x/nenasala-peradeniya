@@ -72,7 +72,7 @@ export async function getAdminInstructors(): Promise<AdminInstructorRecord[]> {
     const profile = firstRelation(row.profiles as any) as any;
     return {
       id: row.profile_id,
-      full_name: profile?.full_name ?? "Instructor",
+      full_name: profile?.full_name ?? "Lecturer",
       email: profile?.email ?? null,
       phone: profile?.phone ?? null,
       status: profile?.status ?? "active",

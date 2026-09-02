@@ -140,10 +140,10 @@ export async function getCurrentInstructorProfile(): Promise<InstructorProfileRe
   // is optional and must never bounce a valid instructor out of the portal.
   return {
     id: actor.id,
-    full_name: profile?.full_name ?? "Instructor",
+    full_name: profile?.full_name ?? "Lecturer",
     email: profile?.email ?? null,
     avatar_url: profile?.avatar_url ?? null,
-    professional_title: instructorProfile?.professional_title ?? "Instructor",
+    professional_title: instructorProfile?.professional_title ?? "Lecturer",
   };
 }
 

@@ -283,7 +283,7 @@ export async function getInstructorTeachingData(): Promise<InstructorTeachingDat
       .order("created_at");
     instructors = (data ?? []).map((row: any) => ({
       id: row.profile_id,
-      full_name: one(row.profiles)?.full_name ?? "Instructor",
+      full_name: one(row.profiles)?.full_name ?? "Lecturer",
     }));
   }
 

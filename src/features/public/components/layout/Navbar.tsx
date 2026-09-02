@@ -26,7 +26,7 @@ export function Navbar() {
   const links = [
     { href: "/courses", label: "Courses" },
     { href: "/intakes", label: "Intakes" },
-    { href: "/instructors", label: "Instructors" },
+    { href: "/instructors", label: "Lecturers" },
     { href: "/verify", label: "Verify" },
     { href: "/about", label: "About" },
     { href: "/contact", label: "Contact" },

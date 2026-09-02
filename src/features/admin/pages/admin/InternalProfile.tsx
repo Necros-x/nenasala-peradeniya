@@ -19,7 +19,7 @@ function roleLabel(role: AccountRole) {
   if (role === "super_admin") return "Super Admin";
   if (role === "admin") return "Admin";
   if (role === "staff") return "Staff";
-  if (role === "instructor") return "Instructor";
+  if (role === "instructor") return "Lecturer";
   return "Student";
 }
 

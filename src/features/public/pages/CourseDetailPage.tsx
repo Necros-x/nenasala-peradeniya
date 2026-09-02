@@ -130,7 +130,7 @@ export function CourseDetailPage({
             {/* Instructor */}
             {instructor && (
                <section className="pt-8 border-t border-[var(--color-border)]">
-                  <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-6">Your Instructor</h2>
+                  <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-6">Your Lecturer</h2>
                   <div className="flex flex-col sm:flex-row gap-6 items-start">
                      {instructor.image ? (
                         <img src={instructor.image} alt={instructor.name} className="w-24 h-24 rounded-full object-cover border-4 border-[var(--color-surface-elevated)]" />

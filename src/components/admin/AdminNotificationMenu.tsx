@@ -62,7 +62,7 @@ export function AdminNotificationMenu() {
     { label: "New contact messages", detail: "Waiting in the contact inbox", count: attention.newContactMessages, path: "/messages", icon: MessageSquareText },
     { label: "Pending enrollments", detail: "Waiting for review", count: attention.pendingEnrollments, path: "/enrollments", icon: UserPlus },
     { label: "Assignments to grade", detail: "Submitted or late", count: attention.ungradedSubmissions, path: "/lms/assignments", icon: ClipboardCheck },
-    { label: "Unassigned classes", detail: "Need an instructor", count: attention.unassignedClasses, path: "/lms/classes", icon: GraduationCap },
+    { label: "Unassigned classes", detail: "Need a lecturer", count: attention.unassignedClasses, path: "/lms/classes", icon: GraduationCap },
     { label: "Intakes closing soon", detail: "Within the next 7 days", count: attention.closingIntakes, path: "/intakes", icon: CalendarClock },
     { label: "Scheduled announcements", detail: "Prepared for later", count: attention.scheduledAnnouncements, path: "/lms/announcements", icon: Megaphone },
   ].filter((item) => item.count > 0);

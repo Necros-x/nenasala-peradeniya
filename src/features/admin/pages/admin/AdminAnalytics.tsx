@@ -89,7 +89,7 @@ export default function AdminAnalytics({ data }: { data: AdminAnalyticsData }) {
       ["Enrollment completion rate", `${data.headline.completionRate}%`],
       ["Active classes", data.headline.activeClasses],
       ["Published courses", data.headline.publishedCourses],
-      ["Instructors", data.headline.instructors],
+      ["Lecturers", data.headline.instructors],
       ["Certificates issued", data.headline.certificatesIssued],
       [],
       ["Course performance"],
@@ -173,7 +173,7 @@ export default function AdminAnalytics({ data }: { data: AdminAnalyticsData }) {
     { label: "Students", value: data.headline.students, detail: `${data.headline.activeLearners} active learners`, icon: UsersRound },
     { label: "Enrollments", value: data.headline.enrollments, detail: `${data.headline.completionRate}% completed`, icon: GraduationCap },
     { label: "Active Classes", value: data.headline.activeClasses, detail: `${data.headline.publishedCourses} published courses`, icon: BookOpen },
-    { label: "Instructors", value: data.headline.instructors, detail: `${data.headline.certificatesIssued} certificates issued`, icon: Presentation },
+    { label: "Lecturers", value: data.headline.instructors, detail: `${data.headline.certificatesIssued} certificates issued`, icon: Presentation },
   ];
 
   const periodCards = [
@@ -190,7 +190,7 @@ export default function AdminAnalytics({ data }: { data: AdminAnalyticsData }) {
           <p className="text-sm font-bold uppercase tracking-[0.15em] text-brand-primary">Analytics</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-text-primary">Institution Analytics</h1>
           <p className="mt-1 max-w-3xl text-text-secondary">
-            Real enrollment, engagement, assessment, instructor and credential performance from the LMS database.
+            Real enrollment, engagement, assessment, lecturer and credential performance from the LMS database.
           </p>
         </div>
 

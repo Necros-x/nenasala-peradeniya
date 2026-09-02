@@ -46,8 +46,8 @@ const navGroups = [
     title: "PEOPLE",
     items: [
       { label: "Students", path: "/students", icon: Users },
-      { label: "Instructors", path: "/instructors", icon: Briefcase },
-      { label: "Staff & Admin", path: "/staff", icon: UserPlus },
+      { label: "Lecturers", path: "/instructors", icon: Briefcase },
+      { label: "Internal Accounts", path: "/staff", icon: UserPlus },
     ],
   },
   {
