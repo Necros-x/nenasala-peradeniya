@@ -1,7 +1,6 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { hasValidDemoSession, isAdminDemoEnabled } from "@/lib/demo/session";
 
 export type PlatformRole = "student" | "instructor" | "staff" | "admin" | "super_admin";
 
@@ -46,32 +45,28 @@ export async function hasRealInstructorSession() {
 }
 
 export async function requireStudent() {
-  if (isLocalUiBypass()) return { id: "local-ui-preview", roles: ["student"] as PlatformRole[] };
-
   const identity = await getCurrentIdentity();
   if (identity) {
     if (!identity.roles.includes("student")) redirect("/");
     return identity;
   }
 
-  if (await hasValidDemoSession()) {
-    return { id: "demo-preview", roles: ["student"] as PlatformRole[] };
+  if (isLocalUiBypass()) {
+    return { id: "local-ui-preview", roles: ["student"] as PlatformRole[] };
   }
 
   redirect("/login");
 }
 
 export async function requireAdmin(loginPath: string) {
-  if (isLocalUiBypass()) return { id: "local-ui-preview", roles: ["super_admin"] as PlatformRole[] };
-
   const identity = await getCurrentIdentity();
   if (identity) {
     if (!identity.roles.some((role) => role === "admin" || role === "super_admin")) redirect("/");
     return identity;
   }
 
-  if (isAdminDemoEnabled() && (await hasValidDemoSession())) {
-    return { id: "demo-preview", roles: ["super_admin"] as PlatformRole[] };
+  if (isLocalUiBypass()) {
+    return { id: "local-ui-preview", roles: ["super_admin"] as PlatformRole[] };
   }
 
   redirect(loginPath);
@@ -85,8 +80,6 @@ export async function requireRealAdmin() {
 }
 
 export async function requireAdministrationAccess(loginPath: string) {
-  if (isLocalUiBypass()) return { id: "local-ui-preview", roles: ["super_admin"] as PlatformRole[] };
-
   const identity = await getCurrentIdentity();
   if (identity) {
     const allowed = identity.roles.some(
@@ -96,8 +89,8 @@ export async function requireAdministrationAccess(loginPath: string) {
     return identity;
   }
 
-  if (isAdminDemoEnabled() && (await hasValidDemoSession())) {
-    return { id: "demo-preview", roles: ["super_admin"] as PlatformRole[] };
+  if (isLocalUiBypass()) {
+    return { id: "local-ui-preview", roles: ["super_admin"] as PlatformRole[] };
   }
 
   redirect(loginPath);
@@ -119,8 +112,6 @@ export async function requireRealSuperAdmin() {
 }
 
 export async function requireInternalAccess(loginPath: string) {
-  if (isLocalUiBypass()) return { id: "local-ui-preview", roles: ["super_admin"] as PlatformRole[] };
-
   const identity = await getCurrentIdentity();
   if (identity) {
     const allowed = identity.roles.some(
@@ -130,8 +121,8 @@ export async function requireInternalAccess(loginPath: string) {
     return identity;
   }
 
-  if (isAdminDemoEnabled() && (await hasValidDemoSession())) {
-    return { id: "demo-preview", roles: ["super_admin"] as PlatformRole[] };
+  if (isLocalUiBypass()) {
+    return { id: "local-ui-preview", roles: ["super_admin"] as PlatformRole[] };
   }
 
   redirect(loginPath);

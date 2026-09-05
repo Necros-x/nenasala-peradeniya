@@ -25,10 +25,12 @@ export default function InternalUsersManager({
   users,
   accessKey,
   canManage,
+  currentUserId,
 }: {
   users: InternalUserRecord[];
   accessKey: string;
   canManage: boolean;
+  currentUserId: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -105,9 +107,9 @@ export default function InternalUsersManager({
     <div className="space-y-6">
       <div>
         <p className="text-sm font-bold uppercase tracking-[0.15em] text-brand-primary">People</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-text-primary">Staff & Admin</h1>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-text-primary">Internal Accounts</h1>
         <p className="mt-1 text-text-secondary">
-          Internal identities and access levels. Super Admin accounts are protected from modification here.
+          Super Admins can create and manage Staff, Admin and Super Admin identities. Your own privileged role is protected server-side.
         </p>
       </div>
 
@@ -154,6 +156,7 @@ export default function InternalUsersManager({
                 <select name="role" defaultValue="staff" className={input}>
                   <option value="staff">Staff — Communications</option>
                   <option value="admin">Admin — Administration + LMS + Analytics</option>
+                  <option value="super_admin">Super Admin — Full privileged access</option>
                 </select>
               </label>
             </div>
@@ -198,6 +201,7 @@ export default function InternalUsersManager({
                 <tbody>
                   {users.map((user) => {
                     const protectedUser = user.role === "super_admin";
+                    const currentUser = user.id === currentUserId;
                     return (
                       <tr key={user.id} className="border-b border-border/70 last:border-0">
                         <td className="px-4 py-3">
@@ -226,7 +230,7 @@ export default function InternalUsersManager({
                           <div className="flex justify-end gap-2">
                             <button
                               type="button"
-                              disabled={!canManage || protectedUser || pending}
+                              disabled={!canManage || currentUser || pending}
                               onClick={() => setEditing(user)}
                               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-bold text-text-primary hover:bg-background disabled:cursor-not-allowed disabled:opacity-35"
                             >
@@ -234,7 +238,7 @@ export default function InternalUsersManager({
                             </button>
                             <button
                               type="button"
-                              disabled={!canManage || protectedUser || pending}
+                              disabled={!canManage || currentUser || pending}
                               onClick={() => setDeleting(user)}
                               className="inline-flex items-center gap-1.5 rounded-md border border-danger/30 px-3 py-2 text-xs font-bold text-danger hover:bg-[var(--status-error-soft)] disabled:cursor-not-allowed disabled:opacity-35"
                             >
@@ -292,9 +296,10 @@ export default function InternalUsersManager({
                 </label>
                 <label>
                   <span className="text-sm font-semibold text-text-primary">Role</span>
-                  <select name="role" defaultValue={editing.role === "admin" ? "admin" : "staff"} className={input}>
+                  <select name="role" defaultValue={editing.role} className={input}>
                     <option value="staff">Staff</option>
                     <option value="admin">Admin</option>
+                    <option value="super_admin">Super Admin</option>
                   </select>
                 </label>
                 <label className="md:col-span-2">

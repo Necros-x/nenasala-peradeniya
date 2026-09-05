@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { LockKeyhole } from "lucide-react";
+import { LockKeyhole, ShieldCheck } from "lucide-react";
 import { Button } from "@/features/admin/components/ui/button";
 import { Input } from "@/features/admin/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/features/admin/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeMenu } from "@/components/theme/ThemeMenu";
 import { requestPasswordResetAction } from "@/lib/actions/auth/password-reset";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export function AdminLoginForm() {
   const params = useParams<{ accessKey: string }>();
@@ -80,17 +81,28 @@ export function AdminLoginForm() {
   }
 
   return (
-    <main className="relative min-h-screen bg-background px-4 py-12 grid place-items-center">
-      <ThemeMenu className="absolute right-5 top-5" />
-      <div className="w-full max-w-md">
-        <img src="/brand/nenasala-logo.png" alt="Nenasala" className="mx-auto mb-8 h-16 w-auto max-w-[260px] object-contain" />
+    <main className="relative grid min-h-screen place-items-center overflow-hidden bg-background px-4 py-12">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_-15%,var(--color-primary-soft),transparent_38%)] opacity-70" />
+
+      <div className="relative w-full max-w-md">
+        <div className="mb-7 flex flex-col items-center text-center">
+          <BrandLogo className="h-14 w-auto max-w-[240px]" />
+          <p className="mt-5 text-xs font-bold uppercase tracking-[0.18em] text-brand-primary">
+            Nenasala Internal
+          </p>
+          <h1 className="mt-2 text-2xl font-bold text-text-primary">Welcome back</h1>
+          <p className="mt-1 max-w-sm text-sm leading-6 text-text-secondary">
+            Sign in to continue to the workspace available for your account.
+          </p>
+        </div>
+
         <Card className="border-border shadow-[var(--shadow-floating)]">
           <CardHeader>
             <div className="mb-3 grid h-11 w-11 place-items-center rounded-[var(--radius-md)] bg-[var(--color-primary-soft)] text-brand-primary">
               <LockKeyhole className="h-5 w-5" />
             </div>
-            <CardTitle>Internal access</CardTitle>
-            <CardDescription>Authorized staff, administrators and instructors only.</CardDescription>
+            <CardTitle>Sign in</CardTitle>
+            <CardDescription>Use the email and password linked to your Nenasala internal account.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={submit} className="space-y-4">
@@ -123,7 +135,17 @@ export function AdminLoginForm() {
             </form>
           </CardContent>
         </Card>
+
+        <div className="mt-4 flex items-start gap-2 px-2 text-xs leading-5 text-text-muted">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary" />
+          Access is based on your assigned role. You will be taken to the Control Center after sign-in.
+        </div>
       </div>
+
+      <ThemeMenu
+        placement="top"
+        className="fixed bottom-5 right-5 z-[140]"
+      />
     </main>
   );
 }

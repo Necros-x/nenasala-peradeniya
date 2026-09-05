@@ -27,10 +27,9 @@ function formatDate(value: string | null) {
 type Props = {
   students: AdminStudentRecord[];
   accessKey: string;
-  readOnlyDemo: boolean;
 };
 
-export default function StudentsList({ students, accessKey, readOnlyDemo }: Props) {
+export default function StudentsList({ students, accessKey }: Props) {
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
@@ -73,18 +72,12 @@ export default function StudentsList({ students, accessKey, readOnlyDemo }: Prop
             </Button>
           </Link>
           <Link href={`/internal/${accessKey}/students/new`}>
-            <Button disabled={readOnlyDemo}>
+            <Button>
               <UserPlus className="mr-2 h-4 w-4" /> Register Student
             </Button>
           </Link>
         </div>
       </div>
-
-      {readOnlyDemo && (
-        <div className="rounded-[var(--radius-md)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
-          Demo mode is read-only. Student registration requires a real administrator session.
-        </div>
-      )}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Card><CardContent className="p-4"><p className="text-sm font-medium text-text-muted">Total Students</p><h3 className="mt-1 text-2xl font-bold">{students.length}</h3></CardContent></Card>

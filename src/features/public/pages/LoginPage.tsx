@@ -204,13 +204,14 @@ export function LoginPage() {
         const roles = new Set((roleRows ?? []).map((row) => row.role));
 
         const isInternalAccount =
+          roles.has("staff") ||
           roles.has("instructor") ||
           roles.has("admin") ||
           roles.has("super_admin");
 
         if (isInternalAccount) {
           await supabase.auth.signOut();
-          setError("Staff and instructor accounts must use the secure internal access link.");
+          setError("Staff and lecturer accounts must use the secure internal access link.");
           return;
         }
       }

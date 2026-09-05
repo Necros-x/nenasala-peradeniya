@@ -79,7 +79,7 @@ export async function saveClassAction(formData: FormData): Promise<ClassActionSt
       .select("profile_id")
       .eq("profile_id", instructorId)
       .maybeSingle();
-    if (instructorError || !instructor) return { ok: false, error: "The selected instructor could not be found." };
+    if (instructorError || !instructor) return { ok: false, error: "The selected lecturer could not be found." };
   }
 
   const payload = {

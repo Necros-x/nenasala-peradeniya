@@ -56,6 +56,33 @@ export async function saveThemePreferenceAction(theme: ThemePreference) {
   return { ok: true, saved: true };
 }
 
+export async function saveStudentPreferencesAction(formData: FormData) {
+  const ctx = await currentUser();
+  if (!ctx) return { ok: false, error: "Please sign in again." };
+
+  const rawTheme = String(formData.get("theme_preference") ?? "system");
+  if (!validTheme(rawTheme)) return { ok: false, error: "Choose a valid appearance preference." };
+
+  const { error } = await ctx.supabase.from("user_preferences").upsert({
+    user_id: ctx.user.id,
+    theme_preference: rawTheme,
+    email_announcements: checked(formData, "email_announcements"),
+    email_assignments: checked(formData, "email_assignments"),
+    email_quizzes: checked(formData, "email_quizzes"),
+    email_live_sessions: checked(formData, "email_live_sessions"),
+    email_course_updates: checked(formData, "email_course_updates"),
+    email_certificates: checked(formData, "email_certificates"),
+  }, { onConflict: "user_id" });
+
+  if (error) {
+    console.error("Unable to update student preferences:", error.message);
+    return { ok: false, error: "Unable to update your settings." };
+  }
+
+  revalidatePath("/student/settings");
+  return { ok: true };
+}
+
 export async function saveStudentSettingsAction(formData: FormData) {
   const ctx = await currentUser();
   if (!ctx) return { ok: false, error: "Please sign in again." };

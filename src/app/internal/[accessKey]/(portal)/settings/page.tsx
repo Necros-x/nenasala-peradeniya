@@ -13,7 +13,6 @@ export default async function Page({
   const identity = await requireAdmin(`/internal/${accessKey}/login`);
   const data = await getAdminPlatformSettings();
   const canEdit =
-    identity.id !== "demo-preview" &&
     identity.id !== "local-ui-preview" &&
     identity.roles.includes("super_admin");
 

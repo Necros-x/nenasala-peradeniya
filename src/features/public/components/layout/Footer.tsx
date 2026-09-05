@@ -1,6 +1,7 @@
 "use client";
 
 import { Link } from "react-router-dom";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export function Footer() {
   return (
@@ -9,10 +10,10 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
           <div className="lg:col-span-1">
             <Link to="/" className="flex items-center gap-3">
-              <img src="/brand/nenasala-logo.png" alt="Nenasala" className="h-10 w-auto max-w-[180px] object-contain" />
+              <BrandLogo className="h-10 w-auto max-w-[180px]" />
             </Link>
             <p className="mt-4 text-sm text-[var(--color-text-secondary)]">
-              Modern education powered by a modern digital platform. Building skills for the future.
+              Practical technology and professional learning, with your classes, materials and progress connected in one place.
             </p>
           </div>
           
@@ -21,7 +22,7 @@ export function Footer() {
             <ul className="mt-4 space-y-3">
               <li><Link to="/courses" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">Courses</Link></li>
               <li><Link to="/intakes" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">Intakes</Link></li>
-              <li><Link to="/instructors" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">Instructors</Link></li>
+              <li><Link to="/instructors" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">Lecturers</Link></li>
             </ul>
           </div>
           
@@ -37,7 +38,7 @@ export function Footer() {
             <h3 className="text-sm font-semibold text-[var(--color-text-primary)] tracking-wider uppercase">Support</h3>
             <ul className="mt-4 space-y-3">
               <li><Link to="/faq" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">FAQ</Link></li>
-              <li><Link to="/login" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">Student Login</Link></li>
+              <li><Link to="/login" className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">Student Portal</Link></li>
             </ul>
           </div>
         </div>

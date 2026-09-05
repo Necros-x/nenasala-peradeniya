@@ -13,7 +13,6 @@ export default async function Page({
   const identity = await requireAdmin(`/internal/${accessKey}/login`);
   const users = await getInternalUsers();
   const canManage =
-    identity.id !== "demo-preview" &&
     identity.id !== "local-ui-preview" &&
     identity.roles.includes("super_admin");
 
@@ -22,6 +21,7 @@ export default async function Page({
       users={users}
       accessKey={accessKey}
       canManage={canManage}
+      currentUserId={identity.id}
     />
   );
 }

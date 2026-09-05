@@ -18,7 +18,7 @@ export function InstructorSpotlightSection() {
           >
             <img
               src="https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=1200"
-              alt="Instructor leading a session"
+              alt="Lecturer leading a session"
               className="w-full h-full object-cover"
             />
           </motion.div>

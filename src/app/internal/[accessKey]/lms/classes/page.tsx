@@ -3,17 +3,15 @@ import { getAdminClasses, getAdminInstructorOptions } from "@/lib/services/class
 import { getAdminCourses } from "@/lib/services/courses";
 import { getAdminIntakes } from "@/lib/services/intakes";
 import { getAdminProgrammes } from "@/lib/services/programmes";
-import { hasValidDemoSession, isAdminDemoEnabled } from "@/lib/demo/session";
 
 export default async function Page({ params }: { params: Promise<{ accessKey: string }> }) {
   const { accessKey } = await params;
-  const [classes, intakes, programmes, courses, instructors, demo] = await Promise.all([
+  const [classes, intakes, programmes, courses, instructors] = await Promise.all([
     getAdminClasses(),
     getAdminIntakes(),
     getAdminProgrammes(),
     getAdminCourses(),
     getAdminInstructorOptions(),
-    hasValidDemoSession(),
   ]);
 
   return (
@@ -24,7 +22,7 @@ export default async function Page({ params }: { params: Promise<{ accessKey: st
       courses={courses}
       instructors={instructors}
       accessKey={accessKey}
-      readOnlyDemo={isAdminDemoEnabled() && demo}
+      readOnlyDemo={false}
     />
   );
 }

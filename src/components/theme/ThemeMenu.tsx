@@ -11,7 +11,15 @@ const options: Array<{ value: ThemePreference; label: string; icon: typeof Monit
   { value: "dark", label: "Dark", icon: Moon },
 ];
 
-export function ThemeMenu({ className = "", showLabel = false }: { className?: string; showLabel?: boolean }) {
+export function ThemeMenu({
+  className = "",
+  showLabel = false,
+  placement = "bottom",
+}: {
+  className?: string;
+  showLabel?: boolean;
+  placement?: "top" | "bottom";
+}) {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -41,7 +49,12 @@ export function ThemeMenu({ className = "", showLabel = false }: { className?: s
       </button>
 
       {open && (
-        <div role="menu" className="absolute right-0 top-full z-[120] mt-2 w-44 overflow-hidden rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-[var(--shadow-floating)]">
+        <div
+          role="menu"
+          className={`absolute right-0 z-[120] w-44 overflow-hidden rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-[var(--shadow-floating)] ${
+            placement === "top" ? "bottom-full mb-2" : "top-full mt-2"
+          }`}
+        >
           {options.map((option) => {
             const Icon = option.icon;
             const selected = option.value === theme;

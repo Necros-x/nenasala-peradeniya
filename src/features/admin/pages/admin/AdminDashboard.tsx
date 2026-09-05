@@ -136,7 +136,7 @@ export default function AdminDashboard() {
                 { user: "System", action: "created new intake", target: "WD-26.2", time: "1 hour ago" },
                 { user: "Finance Dept", action: "verified payment for", target: "NPU-20260039", time: "3 hours ago" },
                 { user: "Super Admin", action: "updated course", target: "React Basics", time: "Yesterday" },
-                { user: "Instructor", action: "requested class cancellation", target: "Graphic Design", time: "Yesterday" },
+                { user: "Lecturer", action: "requested class cancellation", target: "Graphic Design", time: "Yesterday" },
               ].map((log, i) => (
                 <div key={i} className="flex gap-3 text-sm">
                   <div className="w-2 h-2 mt-1.5 rounded-full bg-brand-secondary flex-shrink-0"></div>

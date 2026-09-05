@@ -7,7 +7,11 @@ export const metadata: Metadata = {
     default: "Nenasala Peradeniya",
     template: "%s | Nenasala Peradeniya",
   },
-  description: "Nenasala Peradeniya learning platform.",
+  description: "Practical technology and professional learning at Nenasala Peradeniya.",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

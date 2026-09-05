@@ -7,6 +7,7 @@ import { Button } from "../ui/Button";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { cn } from "../../lib/utils";
 import { ThemeMenu } from "@/components/theme/ThemeMenu";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,9 +26,10 @@ export function Navbar() {
   const links = [
     { href: "/courses", label: "Courses" },
     { href: "/intakes", label: "Intakes" },
-    { href: "/instructors", label: "Instructors" },
+    { href: "/instructors", label: "Lecturers" },
     { href: "/verify", label: "Verify" },
     { href: "/about", label: "About" },
+    { href: "/contact", label: "Contact" },
   ];
 
   return (
@@ -47,7 +49,7 @@ export function Navbar() {
         )}
       >
         <Link to="/" className="flex items-center gap-3 group">
-          <img src="/brand/nenasala-logo.png" alt="Nenasala" className="h-9 w-auto max-w-[150px] object-contain transition-transform group-hover:scale-[1.02]" />
+          <BrandLogo className="h-9 w-auto max-w-[150px] transition-transform group-hover:scale-[1.02]" />
         </Link>
 
         {/* Desktop Nav */}
@@ -78,7 +80,7 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-4">
           <ThemeMenu />
           <Link to="/login">
-            <Button variant="primary" className="rounded-full px-6">Login / Sign up</Button>
+            <Button variant="primary" className="rounded-full px-6">Student Portal</Button>
           </Link>
         </div>
 
@@ -119,7 +121,7 @@ export function Navbar() {
             </div>
             <div className="mt-4 px-3 pt-2 border-t border-[var(--color-border)]">
               <Link to="/login" onClick={() => setIsOpen(false)}>
-                <Button variant="primary" className="w-full rounded-full py-6">Login / Sign up</Button>
+                <Button variant="primary" className="w-full rounded-full py-6">Student Portal</Button>
               </Link>
             </div>
           </div>

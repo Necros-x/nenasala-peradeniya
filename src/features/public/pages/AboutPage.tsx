@@ -209,7 +209,7 @@ export function AboutPage() {
               {[
                  { val: 1000, suffix: "+", label: "Students Taught" },
                  { val: 20, suffix: "+", label: "Active Programs" },
-                 { val: 15, suffix: "+", label: "Expert Instructors" },
+                 { val: 15, suffix: "+", label: "Expert Lecturers" },
                  { val: 10, suffix: "+", label: "Years Excellence" }
               ].map((stat, i) => (
                  <motion.div 

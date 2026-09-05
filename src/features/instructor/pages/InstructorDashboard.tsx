@@ -19,7 +19,7 @@ export default function InstructorDashboard({
   data: AwaitedReturn;
   basePath?: string;
 }) {
-  const firstName = data.profile?.full_name.split(/\s+/)[0] ?? "Instructor";
+  const firstName = data.profile?.full_name.split(/\s+/)[0] ?? "Lecturer";
   const stats = [
     { label: "Assigned Classes", value: data.classes.length, icon: BookOpen },
     { label: "Students", value: data.students.length, icon: UsersRound },
@@ -30,7 +30,7 @@ export default function InstructorDashboard({
   return (
     <div className="space-y-7">
       <div>
-        <p className="text-sm font-bold uppercase tracking-[0.15em] text-brand-primary">Instructor Dashboard</p>
+        <p className="text-sm font-bold uppercase tracking-[0.15em] text-brand-primary">Lecturer Dashboard</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-text-primary">Welcome, {firstName}</h1>
         <p className="mt-1 text-text-secondary">Classes, grading queue and upcoming sessions in one place.</p>
       </div>

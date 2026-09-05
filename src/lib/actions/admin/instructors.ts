@@ -62,13 +62,13 @@ export async function registerInstructorAction(formData: FormData): Promise<Inst
   const expertise = csv(text(formData, "expertise"));
   const isPublic = text(formData, "is_public") === "on";
 
-  if (fullName.length < 2) return { ok: false, error: "Instructor name is required." };
-  if (!/^\S+@\S+\.\S+$/.test(email)) return { ok: false, error: "Enter a valid instructor email." };
+  if (fullName.length < 2) return { ok: false, error: "Lecturer name is required." };
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { ok: false, error: "Enter a valid lecturer email." };
 
   if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
     return {
       ok: false,
-      error: "Resend is not configured. Add RESEND_API_KEY and RESEND_FROM_EMAIL before inviting instructors.",
+      error: "Resend is not configured. Add RESEND_API_KEY and RESEND_FROM_EMAIL before inviting lecturers.",
     };
   }
 
@@ -86,7 +86,7 @@ export async function registerInstructorAction(formData: FormData): Promise<Inst
     .maybeSingle();
 
   if (existingProfile) {
-    return { ok: false, error: "An account already exists for that email address. Delete the old instructor first or use another email." };
+    return { ok: false, error: "An account already exists for that email address. Delete the old lecturer first or use another email." };
   }
 
   const requestHeaders = await headers();
@@ -110,7 +110,7 @@ export async function registerInstructorAction(formData: FormData): Promise<Inst
   });
 
   if (error || !data.user) {
-    return { ok: false, error: error?.message ?? "Unable to create the instructor invitation." };
+    return { ok: false, error: error?.message ?? "Unable to create the lecturer invitation." };
   }
 
   const instructorId = data.user.id;
@@ -140,13 +140,13 @@ export async function registerInstructorAction(formData: FormData): Promise<Inst
       });
     if (instructorError) throw instructorError;
 
-    if (!actionLink) throw new Error("The instructor invite link was not generated.");
+    if (!actionLink) throw new Error("The lecturer invite link was not generated.");
 
     const template = notificationEmail({
       name: fullName,
-      title: "Your Nenasala instructor account is ready",
-      message: "You have been invited to the Nenasala Peradeniya Instructor Portal. Set your password, then use the secure internal access link to open your lecturer workspace.",
-      actionLabel: "Set up instructor account",
+      title: "Your Nenasala lecturer account is ready",
+      message: "You have been invited to the Nenasala Peradeniya Lecturer Portal. Set your password, then use the secure internal access link to open your lecturer workspace.",
+      actionLabel: "Set up lecturer account",
       actionUrl: actionLink,
     });
 
@@ -157,7 +157,7 @@ export async function registerInstructorAction(formData: FormData): Promise<Inst
       text: template.text,
     });
 
-    if (!sent.ok) throw new Error(sent.error ?? "Unable to send the instructor invitation email through Resend.");
+    if (!sent.ok) throw new Error(sent.error ?? "Unable to send the lecturer invitation email through Resend.");
 
     await admin.from("audit_logs").insert({
       actor_id: actor.id,
@@ -170,13 +170,13 @@ export async function registerInstructorAction(formData: FormData): Promise<Inst
     revalidateInstructorPaths(accessKey);
     return { ok: true, email, delivery: "resend" };
   } catch (finishError) {
-    console.error("Unable to finish instructor registration:", finishError);
+    console.error("Unable to finish lecturer registration:", finishError);
     await admin.auth.admin.deleteUser(instructorId).catch(() => undefined);
     return {
       ok: false,
       error: finishError instanceof Error
         ? finishError.message
-        : "The instructor account could not be completed. The partial account was rolled back.",
+        : "The lecturer account could not be completed. The partial account was rolled back.",
     };
   }
 }
@@ -199,9 +199,9 @@ export async function updateInstructorAction(formData: FormData): Promise<Instru
   const isPublic = text(formData, "is_public") === "on";
   const status = text(formData, "status");
 
-  if (!instructorId) return { ok: false, error: "Instructor is required." };
-  if (fullName.length < 2) return { ok: false, error: "Instructor name is required." };
-  if (!/^\S+@\S+\.\S+$/.test(email)) return { ok: false, error: "Enter a valid instructor email." };
+  if (!instructorId) return { ok: false, error: "Lecturer is required." };
+  if (fullName.length < 2) return { ok: false, error: "Lecturer name is required." };
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { ok: false, error: "Enter a valid lecturer email." };
   if (!["active", "inactive", "suspended"].includes(status)) return { ok: false, error: "Invalid account status." };
 
   const admin = createAdminClient();
@@ -212,7 +212,22 @@ export async function updateInstructorAction(formData: FormData): Promise<Instru
     .eq("profile_id", instructorId)
     .maybeSingle();
 
-  if (!instructor) return { ok: false, error: "Instructor account could not be found." };
+  if (!instructor) return { ok: false, error: "Lecturer account could not be found." };
+
+  const { data: protectedRoles, error: roleCheckError } = await admin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", instructorId)
+    .in("role", ["admin", "super_admin"])
+    .limit(1);
+
+  if (roleCheckError) return { ok: false, error: roleCheckError.message };
+  if ((protectedRoles?.length ?? 0) > 0) {
+    return {
+      ok: false,
+      error: "This lecturer also has administrative privileges. Manage that account from Internal Accounts instead.",
+    };
+  }
 
   const { error: authError } = await admin.auth.admin.updateUserById(instructorId, {
     email,
@@ -258,7 +273,7 @@ export async function deleteInstructorAction(formData: FormData): Promise<Instru
   if (!actor) return { ok: false, error: "Demo/preview mode is read-only." };
 
   const instructorId = text(formData, "instructor_id");
-  if (!instructorId) return { ok: false, error: "Instructor is required." };
+  if (!instructorId) return { ok: false, error: "Lecturer is required." };
 
   const admin = createAdminClient();
 
@@ -268,7 +283,22 @@ export async function deleteInstructorAction(formData: FormData): Promise<Instru
     .eq("profile_id", instructorId)
     .maybeSingle();
 
-  if (!instructor) return { ok: false, error: "Instructor account could not be found." };
+  if (!instructor) return { ok: false, error: "Lecturer account could not be found." };
+
+  const { data: protectedRoles, error: roleCheckError } = await admin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", instructorId)
+    .in("role", ["admin", "super_admin"])
+    .limit(1);
+
+  if (roleCheckError) return { ok: false, error: roleCheckError.message };
+  if ((protectedRoles?.length ?? 0) > 0) {
+    return {
+      ok: false,
+      error: "This lecturer also has administrative privileges. Manage that account from Internal Accounts instead.",
+    };
+  }
 
   const { count: assignedClasses } = await admin
     .from("classes")
@@ -281,7 +311,7 @@ export async function deleteInstructorAction(formData: FormData): Promise<Instru
     .eq("instructor_id", instructorId);
 
   if (unassignError) {
-    return { ok: false, error: `Unable to unassign instructor classes: ${unassignError.message}` };
+    return { ok: false, error: `Unable to unassign lecturer classes: ${unassignError.message}` };
   }
 
   await admin.from("audit_logs").insert({

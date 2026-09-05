@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { requireInstructorPortal } from "@/lib/auth/guards";
 import { getCurrentInstructorProfile } from "@/lib/services/instructor-portal";
 import InstructorShell from "@/components/instructor/InstructorShell";
+import { PageTransition } from "@/components/motion/PageTransition";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -35,7 +36,7 @@ export default async function Layout({
       controlCenterPath={`/internal/${accessKey}`}
       globalView={globalView}
     >
-      {children}
+      <PageTransition>{children}</PageTransition>
     </InstructorShell>
   );
 }

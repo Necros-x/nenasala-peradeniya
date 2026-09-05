@@ -8,10 +8,13 @@ import {
   Presentation,
   ArrowRight,
   Search,
-  Bell,
   MessageSquare,
 } from "lucide-react";
 import { Card } from "@/features/admin/components/ui/card";
+import { BrandLogo } from "@/components/brand/BrandLogo";
+import { AccountAvatar } from "@/components/account/AccountAvatar";
+import { AdminNotificationMenu } from "@/components/admin/AdminNotificationMenu";
+import { useCurrentInternalAccount } from "@/components/admin/useCurrentInternalAccount";
 type PlatformRole = "student" | "instructor" | "staff" | "admin" | "super_admin";
 
 type Portal = {
@@ -34,35 +37,35 @@ type AttentionData = {
 const portals: Portal[] = [
   {
     title: "ADMINISTRATION",
-    description: "Users, programmes, payments, intakes and documents.",
+    description: "Manage people, programmes, intakes, certificates and day-to-day administration.",
     icon: Settings,
     path: "/dashboard",
     roles: ["admin", "super_admin"],
   },
   {
     title: "LMS MANAGEMENT",
-    description: "Classes, learning content, assignments and quizzes.",
+    description: "Run classes, learning content, assessments, recordings and student progress.",
     icon: BookOpen,
     path: "/lms",
     roles: ["admin", "super_admin"],
   },
   {
     title: "ANALYTICS",
-    description: "Reports, statistics and institutional insights.",
+    description: "Understand enrollment, engagement, assessment performance and institutional activity.",
     icon: BarChart3,
     path: "/reports",
     roles: ["admin", "super_admin"],
   },
   {
     title: "COMMUNICATIONS",
-    description: "Website inquiries, support replies and contact handling.",
+    description: "Read website inquiries, keep internal notes and reply to people who contact Nenasala.",
     icon: MessageSquare,
     path: "/messages",
     roles: ["staff", "admin", "super_admin"],
   },
   {
-    title: "INSTRUCTOR PORTAL",
-    description: "Instructor tools, grading and class management.",
+    title: "LECTURER PORTAL",
+    description: "Lecturer tools, grading and class management.",
     icon: Presentation,
     path: "/instructor-portal",
     roles: ["instructor", "super_admin"],
@@ -86,15 +89,17 @@ export default function ControlCenter({
     portal.roles.some((role) => roleSet.has(role))
   );
 
-  const accountName = isSuperAdmin
+  const account = useCurrentInternalAccount(roles);
+  const fallbackAccountName = isSuperAdmin
     ? "Super Administrator"
     : isAdmin
       ? "Administrator"
       : isStaff
         ? "Staff"
         : isInstructor
-          ? "Instructor"
+          ? "Lecturer"
           : "Internal User";
+  const accountName = account?.fullName ?? fallbackAccountName;
 
   const accountRole = isSuperAdmin
     ? "Super Admin"
@@ -106,7 +111,6 @@ export default function ControlCenter({
           ? "Lecturer"
           : "Internal";
 
-  const initials = isSuperAdmin ? "SA" : isAdmin ? "AD" : isStaff ? "ST" : isInstructor ? "IN" : "NU";
 
   const attentionItems = [
     {
@@ -125,7 +129,7 @@ export default function ControlCenter({
     },
     {
       label: "Unassigned Classes",
-      sub: "Need an instructor",
+      sub: "Need a lecturer",
       count: attention.unassignedClasses,
       path: "/lms/classes",
       alert: attention.unassignedClasses > 0,
@@ -150,13 +154,9 @@ export default function ControlCenter({
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-background text-foreground">
       <header className="absolute left-0 top-0 z-10 flex h-16 w-full items-center justify-between border-b border-border bg-background/70 px-4 backdrop-blur-xl md:px-8">
         <div className="flex min-w-0 items-center gap-3">
-          <img
-            src="/brand/nenasala-logo.png"
-            alt="Nenasala"
-            className="h-10 w-auto max-w-[165px] object-contain"
-          />
+          <BrandLogo className="h-10 w-auto max-w-[165px]" />
           <div className="hidden border-l border-border pl-3 sm:block">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-text-muted">Internal Operating System</p>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-text-muted">Nenasala Management</p>
           </div>
         </div>
 
@@ -166,7 +166,7 @@ export default function ControlCenter({
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
               <input
                 type="search"
-                placeholder="Search records (Cmd + K)"
+                placeholder="Search students, courses and records"
                 className="w-full rounded-[var(--radius-sm)] border border-border bg-surface py-2 pl-10 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-text-muted focus:border-brand-primary/50"
               />
             </div>
@@ -174,25 +174,14 @@ export default function ControlCenter({
         )}
 
         <div className="flex items-center gap-3">
-          {!isInstructor && !isStaff && (
-            <button
-              type="button"
-              aria-label="Notifications"
-              className="relative hidden rounded-[var(--radius-sm)] p-2 text-text-muted transition-colors hover:bg-surface-muted hover:text-foreground md:block"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border-2 border-background bg-brand-primary" />
-            </button>
-          )}
+          {!isInstructor && !isStaff && <AdminNotificationMenu />}
           <div className="hidden h-6 w-px bg-border md:block" />
           <div className="flex items-center gap-3">
             <div className="hidden text-right md:block">
               <p className="text-xs font-medium text-foreground">{accountName}</p>
               <p className="text-[10px] text-brand-primary">{accountRole}</p>
             </div>
-            <div className="grid h-9 w-9 place-items-center rounded-[10px] border border-border bg-[var(--color-primary-soft)] text-xs font-bold text-brand-primary">
-              {initials}
-            </div>
+            <AccountAvatar name={accountName} avatarUrl={account?.avatarUrl} className="h-9 w-9" textClassName="text-xs" />
           </div>
         </div>
       </header>
@@ -202,7 +191,7 @@ export default function ControlCenter({
           <h1 className="text-3xl font-light text-text-secondary md:text-4xl">Control Center</h1>
           <p className="mt-2 text-sm text-text-muted md:text-base">
             {isInstructor
-              ? "Open your Instructor Portal to continue."
+              ? "Open your Lecturer Portal to continue."
               : isStaff
                 ? "Open Communications to review and reply to inquiries."
                 : "Choose a workspace or review priority items."}
@@ -212,7 +201,7 @@ export default function ControlCenter({
         {!isInstructor && !isStaff && (
           <section className="mb-10 md:mb-12">
             <div className="mb-4 flex items-center justify-between gap-4">
-              <h2 className="text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">Attention Center</h2>
+              <h2 className="text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">Needs Your Attention</h2>
               <span className="rounded-full bg-[var(--color-primary-soft)] px-2.5 py-1 text-[10px] font-bold text-brand-primary">
                 {attention.total} Priority Item{attention.total === 1 ? "" : "s"}
               </span>
@@ -249,7 +238,7 @@ export default function ControlCenter({
                     <p className="text-xs leading-relaxed text-text-muted">{portal.description}</p>
                   </div>
                   <div className="mt-6 flex items-center gap-2 text-xs font-bold text-brand-primary">
-                    ENTER PORTAL
+                    OPEN WORKSPACE
                     <ArrowRight className="h-3 w-3" />
                   </div>
                 </div>
@@ -263,12 +252,12 @@ export default function ControlCenter({
         <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
           <span className="flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
-            System UI Ready
+            Services available
           </span>
-          <span>Development Build</span>
+          <span>Nenasala Peradeniya</span>
         </div>
         <div className="hidden items-center gap-4 md:flex">
-          <span>Secure Internal Access</span>
+          <span>Private management workspace</span>
         </div>
       </footer>
     </div>
